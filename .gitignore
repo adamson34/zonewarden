@@ -1,0 +1,19 @@
+# Rust
+/target
+**/target
+Cargo.lock.bak
+
+# macOS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/
+*.swp
+
+# Misc
+*.log
+
+# Factory artifacts live on the `factory-artifacts` branch, mounted here as a git
+# worktree — not tracked on the code branches (main / dev).
+/.factory
