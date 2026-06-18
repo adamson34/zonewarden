@@ -1,0 +1,7 @@
+# the first zone has a duplicate `id:` mapping key -> E-POL-004
+zones:
+  - id: plc
+    id: plc_duplicate
+    name: PLC Cell
+    purdue_level: L1
+conduits: []

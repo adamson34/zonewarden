@@ -1,0 +1,24 @@
+# minimal zonewarden policy: 2 zones, 2 conduits
+zones:
+  - id: plc
+    name: PLC Cell
+    purdue_level: L1
+    members:
+      - "10.0.1.0/24"
+  - id: historian
+    name: Historian
+    purdue_level: L3
+    sl_t: 3
+    members:
+      - "10.0.3.5/32"
+conduits:
+  - from_zone: plc
+    to_zone: historian
+    direction: unidirectional   # alias -> Forward (AC-005)
+    proto: tcp
+    ports: [500, 501]           # adjacent -> [500-501] (AC-004)
+  - from_zone: historian
+    to_zone: plc
+    direction: bidirectional
+    proto: udp
+    ports: any

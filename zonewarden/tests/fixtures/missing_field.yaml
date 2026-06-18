@@ -1,0 +1,7 @@
+# zone is missing the required `purdue_level` field -> E-POL-002
+zones:
+  - id: plc
+    name: PLC Cell
+    members:
+      - "10.0.1.0/24"
+conduits: []
