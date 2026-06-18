@@ -1,0 +1,10 @@
+[workspace]
+resolver = "2"
+members = ["zonewarden-core", "zonewarden"]
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+authors = ["Luke Adamson"]
+repository = "https://github.com/adamson34/zonewarden"
+rust-version = "1.76"

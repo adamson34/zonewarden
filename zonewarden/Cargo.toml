@@ -1,0 +1,16 @@
+[package]
+name = "zonewarden"
+version = "0.0.1"
+description = "Segmentation-as-code for OT/ICS networks: validate IEC 62443 zone/conduit policy against observed flows."
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "zonewarden"
+path = "src/main.rs"
+
+[dependencies]
+zonewarden-core = { path = "../zonewarden-core" }
