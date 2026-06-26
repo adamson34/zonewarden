@@ -11,7 +11,7 @@ input-hash: "[live-state]"
 traces_to: ""
 project: "zonewarden"
 mode: "greenfield"
-current_step: "phase-3 TDD — Wave 2 (S-2.01 + S-4.01 ready)"
+current_step: "phase-3 TDD — Wave 2 (S-4.01 done; S-2.01 ready)"
 current_cycle: "zonewarden-greenfield"
 dtu_required: false
 ---
@@ -36,7 +36,7 @@ dtu_required: false
 | **Started** | 2026-06-17 |
 | **Last Updated** | 2026-06-26 |
 | **Current Phase** | 3 |
-| **Current Step** | Phase 3 TDD — Wave 2: S-1.02 done; S-2.01 + S-4.01 ready |
+| **Current Step** | Phase 3 TDD — Wave 2: S-4.01 done; S-2.01 ready (last Wave 2 story) |
 
 ## Phase Progress
 
@@ -45,7 +45,7 @@ dtu_required: false
 | 0: Codebase Ingestion | n/a (greenfield) | | | | |
 | 1: Spec Crystallization | COMPLETE | 2026-06-17 | 2026-06-17 | passed | 8 adversarial passes: 14→16→11→15→9→5→9→15; ~93 findings fixed; 0 CRIT ×6, all HIGH-to-date fixed. L2 FROZEN at v1.8 (D-009). Loop not converging to 0-HIGH (novelty 1.0) — accepted sound + proceeded to PRD. Pass-8 MED/LOW = backlog. |
 | 2: Story Decomposition | COMPLETE | 2026-06-17 | 2026-06-17 | passed | 6 epics, 17 stories, 5 waves, 10 holdout scenarios, 44/44 BC coverage, acyclic |
-| 3: TDD Implementation | in-progress | 2026-06-17 | | | Waves 1-2: S-1.01 + S-1.02 DONE (workspace+PortSet; policy YAML load). 2/17 stories; ~36 tests green; clippy -D warnings clean. |
+| 3: TDD Implementation | in-progress | 2026-06-17 | | | Wave 1 + Wave 2 (2/3): S-1.01 + S-1.02 + S-4.01 DONE (workspace+PortSet; policy YAML load; severity grading DI-017). 3/17 stories; ~41 tests green; clippy -D warnings clean. Wave 2 remaining: S-2.01. |
 | 4: Holdout Evaluation | not-started | | | | |
 | 5: Adversarial Refinement | not-started | | | | |
 | 6: Formal Hardening | not-started | | | | |
@@ -81,7 +81,8 @@ dtu_required: false
 | Story decomposition (Phase 2) | story-writer | completed | stories/ (17 stories, 6 epics, 5 waves) + 10 holdout scenarios; 44/44 BC coverage |
 | TDD: S-1.01 workspace + PortSet | (inline TDD) | completed | zonewarden-core + zonewarden crates; 10 tests; commit f380859 |
 | TDD: S-1.02 policy YAML load | (inline TDD) | completed | zonewarden lib+bin, policy::load; 10 tests; commit 6f3f01b |
-| TDD: Wave 2 remaining | — | next | S-2.01 zeek parser, S-4.01 severity (parallel) |
+| TDD: S-4.01 severity grading | (inline TDD) | completed | zonewarden-core::severity (DI-017 single source; OQ-001 13-state); 5 tests; commit 4e95c29 |
+| TDD: Wave 2 remaining | — | next | S-2.01 zeek parser (last Wave 2 story) |
 
 ## Decisions Log
 
@@ -114,8 +115,8 @@ dtu_required: false
 
 | Field | Value |
 |-------|-------|
-| **Date** | 2026-06-17 |
-| **Position** | Phase 3 (TDD). S-1.01 + S-1.02 DONE on dev (workspace+PortSet; policy YAML load via serde_norway DTO->core; error taxonomy E-POL/E-IO; SlTarget struct). S-1.01 proptest+Kani backfilled. ~36 tests green, clippy clean. Repo: 3-branch model (main/dev/factory-artifacts worktree); code on dev. NEXT (Wave 2 parallel): S-2.01 Zeek conn.log parser, S-4.01 severity grading. |
+| **Date** | 2026-06-26 |
+| **Position** | Phase 3 (TDD). S-1.01 + S-1.02 + S-4.01 DONE on dev (workspace+PortSet; policy YAML load via serde_norway DTO->core; severity grading — zonewarden-core::severity, DI-017 single source + OQ-001 13-state table, commit 4e95c29). ~41 tests green, clippy -D warnings clean. Repo: 3-branch model (main/dev/factory-artifacts worktree); code on dev. NEXT (last Wave 2 story): S-2.01 Zeek conn.log parser. KNOWN ISSUE: pre-existing `cargo fmt --check` drift (6 hunks) in S-1.02 files (policy.rs, policy_load_tests.rs) — quality gate not enforced on that commit; fix before wave-gate. |
 | **Convergence counter** | spec loop closed by D-009 (not via D-008 streak) |
 
 ## Historical Content

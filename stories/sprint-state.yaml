@@ -34,12 +34,14 @@ stories:
     worktree: null
 
   S-4.01:
-    status: ready
+    status: done
     wave: 2
     points: 3
     blocked_by: [S-1.01]
-    branch: null
+    branch: dev
     worktree: null
+    commit: 4e95c29
+    notes: "severity::grade + conn_state_from_token (DI-017 single source; OQ-001 13-state table); 5 integration tests; Red Gate verified. Inline TDD on dev."
 
   S-1.03:
     status: blocked
