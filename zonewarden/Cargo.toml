@@ -21,6 +21,7 @@ zonewarden-core = { path = "../zonewarden-core" }
 serde = { version = "1.0", features = ["derive"] }
 serde_norway = "0.9"   # YAML with strict duplicate-key detection (ADR-005)
 serde_json = "1.0"     # JSON report output (S-6.01); wire format lives in the shell (ADR-002)
+clap = { version = "4.5", features = ["derive"] }   # CLI arg parsing (S-6.03, ADR-001)
 
 [dev-dependencies]
 proptest = "1"   # property tests: dense flow_index, accounting identity, panic-free parse

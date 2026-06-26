@@ -1,10 +1,20 @@
-//! `zonewarden` CLI — the effectful shell (ADR-002). Stub for Wave 1; the full
-//! command surface (`validate --policy --flows ...`) is implemented in Wave 5
-//! (S-6.03). Exit code 2 = usage/not-implemented, per the ST-8 exit-code model.
+//! `zonewarden` CLI entry point (effectful shell, ADR-002). Thin wrapper over
+//! [`zonewarden::cli`]: parse args, run the pipeline, map the outcome to a
+//! process exit code (0 conformant / 1 violations / 2 error — BC-1.06.001).
 
 use std::process::ExitCode;
 
+use clap::Parser;
+
+use zonewarden::cli::{self, CliArgs};
+
 fn main() -> ExitCode {
-    eprintln!("zonewarden: not yet implemented (Wave 1 scaffold). See the roadmap in README.md.");
-    ExitCode::from(2)
+    let args = CliArgs::parse();
+    match cli::run(&args) {
+        Ok(code) => ExitCode::from(code),
+        Err(err) => {
+            eprintln!("error: {err}");
+            ExitCode::from(err.exit_code())
+        }
+    }
 }

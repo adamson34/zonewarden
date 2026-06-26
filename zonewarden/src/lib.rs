@@ -3,5 +3,6 @@
 //! wrapper over these modules; integration tests exercise them directly.
 
 pub mod adapters;
+pub mod cli;
 pub mod policy;
 pub mod reporter;
