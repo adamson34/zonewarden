@@ -1,0 +1,6 @@
+#separator \x09
+#path	conn
+#fields	ts	uid	id.orig_h	id.orig_p	id.resp_h	id.resp_p	proto	service	conn_state
+#types	time	string	addr	port	addr	port	enum	string	string
+1717200000.123456	Ca	10.0.1.5	1234	10.0.2.10	502	tcp	-	SF
+1717200001.000000	Cb	10.0.1.6	0	10.0.2.11	44818	udp	-	S0

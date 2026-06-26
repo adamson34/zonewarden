@@ -1,0 +1,5 @@
+#fields	ts	uid	id.orig_h	id.orig_p	id.resp_h	id.resp_p	proto	service	conn_state
+1717200000.1	Ca	10.0.1.5	1111	10.0.2.10	502	tcp	-	SF
+this is a truncated line
+1717200002.0	Cc	0.0.0.0	1	10.0.2.10	502	tcp	-	SF
+1717200003.0	Cd	10.0.1.7	2222	10.0.2.12	80	tcp	-	RSTO
