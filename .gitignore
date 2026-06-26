@@ -16,6 +16,12 @@ Cargo.lock.bak
 # ...but test-fixture conn.log captures are real test data, not runtime logs.
 !zonewarden/tests/fixtures/*.log
 
+# cargo-fuzz: track the targets, ignore generated corpus/artifacts/coverage.
+/fuzz/corpus
+/fuzz/artifacts
+/fuzz/coverage
+/fuzz/Cargo.lock
+
 # Factory artifacts live on the `factory-artifacts` branch, mounted here as a git
 # worktree — not tracked on the code branches (main / dev).
 /.factory

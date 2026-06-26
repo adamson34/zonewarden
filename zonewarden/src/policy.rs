@@ -21,10 +21,16 @@ use zonewarden_core::types::{
 /// Load and parse a YAML policy file into the core `Policy` model.
 pub fn load(path: &Path) -> Result<Policy, ZonewardenError> {
     let text = read_policy_file(path)?;
+    load_str(&text)
+}
+
+/// Parse a YAML policy from an in-memory string (the pure parse step of [`load`],
+/// split out so it can be exercised directly by tests and fuzz targets).
+pub fn load_str(text: &str) -> Result<Policy, ZonewardenError> {
     if text.trim().is_empty() {
         return Err(PolicyError::Empty.into()); // E-POL-001
     }
-    let dto: PolicyYaml = serde_norway::from_str(&text).map_err(classify_yaml_error)?;
+    let dto: PolicyYaml = serde_norway::from_str(text).map_err(classify_yaml_error)?;
     Ok(dto.into_policy()?)
 }
 

@@ -21,6 +21,32 @@ fn test_bc_1_01_001_valid_minimal_policy_loads() {
     assert_eq!(p.conduits.len(), 2);
 }
 
+// P5-IO-004: a YAML alias "billion-laughs" bomb is rejected, not expanded.
+// Our defense is `deny_unknown_fields` + a typed schema: the top-level anchor
+// keys (l0/l1/...) are unknown fields, so deserialization errors at the first
+// one before the nested aliases are ever expanded. The bomb is kept modest so
+// the test cannot OOM the runner even if expansion were unbounded; the point is
+// that load() returns an Err promptly rather than materializing the structure.
+#[test]
+fn test_yaml_alias_bomb_rejected() {
+    let bomb = "\
+l0: &l0 \"x\"
+l1: &l1 [*l0,*l0,*l0,*l0,*l0,*l0,*l0,*l0]
+l2: &l2 [*l1,*l1,*l1,*l1,*l1,*l1,*l1,*l1]
+l3: &l3 [*l2,*l2,*l2,*l2,*l2,*l2,*l2,*l2]
+zones: *l3
+conduits: []
+";
+    let path = std::env::temp_dir().join(format!("zw_bomb_{}.yaml", std::process::id()));
+    std::fs::write(&path, bomb).unwrap();
+    let result = load(&path);
+    let _ = std::fs::remove_file(&path);
+    assert!(
+        result.is_err(),
+        "alias-bomb policy must be rejected, not expanded"
+    );
+}
+
 // AC-002: zone fields are populated and typed correctly.
 #[test]
 fn test_bc_1_01_001_zone_fields_populated() {
