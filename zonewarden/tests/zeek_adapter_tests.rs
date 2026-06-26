@@ -11,8 +11,8 @@ use std::path::{Path, PathBuf};
 use proptest::prelude::*;
 
 use zonewarden::adapters::zeek::ZeekAdapter;
-use zonewarden_core::errors::{FlowParseError, IoError};
-use zonewarden_core::types::{ConnState, Flow, Proto, ServiceSource, Timestamp};
+use zonewarden_core::errors::{FlowParseError, IngestError, IoError};
+use zonewarden_core::types::{ConnState, Flow, Proto, Service, ServiceSource, Timestamp};
 use zonewarden_core::RealitySource;
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -45,7 +45,7 @@ fn line(ts: &str, sip: &str, sp: &str, dip: &str, dp: &str, proto: &str, cs: &st
 /// signals (the consumer derives `skipped`/`warnings` from these).
 struct Drained {
     flows: Vec<Flow>,
-    errs: Vec<FlowParseError>,
+    errs: Vec<IngestError>,
 }
 
 impl Drained {
@@ -109,10 +109,9 @@ fn test_BC_1_02_001_valid_line_produces_flow() {
     assert_eq!(f.proto, Proto::Tcp);
     // SF buckets to Established via the S-4.01 DI-017 single source.
     assert_eq!(f.conn_state, Some(ConnState::Established));
-    // Service inference is BC-1.02.004 (S-2.02); until then service_source is
-    // always set (DI-008) to Unknown and service is None.
-    assert_eq!(f.service, None);
-    assert_eq!(f.service_source, ServiceSource::Unknown);
+    // Service inference (BC-1.02.004, S-2.02): 502/tcp → Modbus, PortHeuristic.
+    assert_eq!(f.service, Some(Service::Modbus));
+    assert_eq!(f.service_source, ServiceSource::PortHeuristic);
 }
 
 #[test]
@@ -216,7 +215,10 @@ fn test_BC_1_02_002_malformed_line_skipped_counted() {
     let d = drain_str(&log(&[&l0, "10.0.1.5\t1234", &l1]));
     assert_eq!(d.flows.len(), 2);
     assert_eq!(d.skipped(), 1);
-    assert!(matches!(d.errs[0], FlowParseError::Malformed { .. }));
+    assert!(matches!(
+        d.errs[0],
+        IngestError::Parse(FlowParseError::Malformed { .. })
+    ));
     // dense index continues across the skip
     assert_eq!(d.flows[0].flow_index, 0);
     assert_eq!(d.flows[1].flow_index, 1);
@@ -249,7 +251,7 @@ fn test_BC_1_02_003_unspecified_src_skipped_with_warning() {
     assert_eq!(d.skipped(), 1);
     assert!(matches!(
         d.errs[0],
-        FlowParseError::UnspecifiedAddress { ref role, .. } if role == "src"
+        IngestError::Parse(FlowParseError::UnspecifiedAddress { ref role, .. }) if role == "src"
     ));
     let w = &d.warnings()[0];
     assert!(w.contains("unspecified"), "warning was: {w}");
@@ -271,7 +273,7 @@ fn test_BC_1_02_003_unspecified_dst_skipped_with_warning() {
     assert_eq!(d.skipped(), 1);
     assert!(matches!(
         d.errs[0],
-        FlowParseError::UnspecifiedAddress { ref role, .. } if role == "dst"
+        IngestError::Parse(FlowParseError::UnspecifiedAddress { ref role, .. }) if role == "dst"
     ));
 }
 
@@ -310,7 +312,7 @@ fn test_BC_1_02_005_mapped_unspecified_canonicalized_then_skipped() {
     assert_eq!(d.flows.len(), 0);
     assert!(matches!(
         d.errs[0],
-        FlowParseError::UnspecifiedAddress { .. }
+        IngestError::Parse(FlowParseError::UnspecifiedAddress { .. })
     ));
 }
 
@@ -489,7 +491,10 @@ fn test_BC_1_02_002_overflowing_timestamp_skipped_not_panic() {
     let d = drain_str(&log(&[&l, &valid]));
     assert_eq!(d.flows.len(), 1, "overflow line must not produce a flow");
     assert_eq!(d.skipped(), 1);
-    assert!(matches!(d.errs[0], FlowParseError::Malformed { .. }));
+    assert!(matches!(
+        d.errs[0],
+        IngestError::Parse(FlowParseError::Malformed { .. })
+    ));
     assert_eq!(d.flows[0].src_ip, ip("10.0.1.6"));
 }
 

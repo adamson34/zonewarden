@@ -18,10 +18,24 @@ use std::io::{BufRead, BufReader};
 use std::net::IpAddr;
 use std::path::Path;
 
-use zonewarden_core::errors::{FlowParseError, IoError};
+use zonewarden_core::errors::{FlowParseError, IngestError, IoError, SysError};
 use zonewarden_core::severity;
-use zonewarden_core::types::{ConnState, Flow, Proto, ServiceSource, Timestamp};
+use zonewarden_core::types::{ConnState, Flow, Proto, Service, ServiceSource, Timestamp};
 use zonewarden_core::RealitySource;
+
+/// Default ingest cap: the maximum number of successfully-normalized flows before
+/// the run aborts (BC-1.02.006). Far below `u64::MAX`; raise with `--max-flows`.
+pub const DEFAULT_MAX_FLOWS: u64 = 1_000_000;
+
+/// Validate a `--max-flows` value: the cap must be at least 1 (BC-1.02.006 inv 2 /
+/// AC-007). Called at CLI arg-parse time (S-6.03) before any flows are read.
+pub fn validate_max_flows(n: u64) -> Result<u64, SysError> {
+    if n == 0 {
+        Err(SysError::ZeroMaxFlows)
+    } else {
+        Ok(n)
+    }
+}
 
 /// Maps Zeek `#fields` column names to their positional index in each data line.
 struct FieldMap {
@@ -55,6 +69,12 @@ pub struct ZeekAdapter<R: BufRead> {
     next_index: u64,
     fields: Option<FieldMap>,
     buf: Vec<u8>,
+    /// Ingest cap: abort once a successful flow would exceed this count
+    /// (BC-1.02.006). Defaults to [`DEFAULT_MAX_FLOWS`].
+    max_flows: u64,
+    /// Set once a fatal error (cap breach) has been yielded, so iteration stops
+    /// cleanly instead of emitting more records.
+    done: bool,
 }
 
 impl ZeekAdapter<BufReader<File>> {
@@ -78,12 +98,23 @@ impl<R: BufRead> ZeekAdapter<R> {
             next_index: 0,
             fields: None,
             buf: Vec::new(),
+            max_flows: DEFAULT_MAX_FLOWS,
+            done: false,
         }
     }
 
+    /// Override the ingest cap (BC-1.02.006). The CLI validates the value with
+    /// [`validate_max_flows`] before calling this.
+    pub fn with_max_flows(mut self, max: u64) -> Self {
+        self.max_flows = max;
+        self
+    }
+
     /// Normalize one already-stripped data line into a `Flow`, assigning the next
-    /// dense `flow_index` only on success.
-    fn parse_data(&mut self, line: &str) -> Result<Flow, FlowParseError> {
+    /// dense `flow_index` only on success. Parse failures surface as
+    /// `IngestError::Parse` (skip signals); reaching the ingest cap surfaces as a
+    /// fatal `IngestError::Sys` (BC-1.02.006).
+    fn parse_data(&mut self, line: &str) -> Result<Flow, IngestError> {
         let line_no = self.line_no;
         let fields = self
             .fields
@@ -103,14 +134,26 @@ impl<R: BufRead> ZeekAdapter<R> {
         // (BC-1.02.005 invariant 2) and gates the record out before any Flow is
         // produced (BC-1.02.003). One skip per record (EC-006): src checked first.
         if src_ip.is_unspecified() {
-            return Err(unspecified(line_no, "src"));
+            return Err(unspecified(line_no, "src").into());
         }
         if dst_ip.is_unspecified() {
-            return Err(unspecified(line_no, "dst"));
+            return Err(unspecified(line_no, "dst").into());
+        }
+
+        // Ingest cap (BC-1.02.006): breach when a successful flow would push the
+        // count beyond max_flows. The cap counts successful flows only — skips
+        // above never reach here. Strict `>`: exactly max_flows flows is OK.
+        if self.next_index >= self.max_flows {
+            self.done = true;
+            return Err(IngestError::Sys(SysError::CapExceeded {
+                max: self.max_flows,
+                count: self.next_index,
+            }));
         }
 
         let flow_index = self.next_index;
         self.next_index += 1;
+        let (service, service_source) = infer_service(&proto, dst_port);
         Ok(Flow {
             flow_index,
             ts,
@@ -119,19 +162,51 @@ impl<R: BufRead> ZeekAdapter<R> {
             dst_ip,
             dst_port,
             proto,
-            // Service inference is BC-1.02.004 (S-2.02). Until then `service` is
-            // None and `service_source` is Unknown — but always set (DI-008).
-            service: None,
-            service_source: ServiceSource::Unknown,
+            service,
+            service_source,
             conn_state,
         })
     }
 }
 
+/// Infer the application-layer service from `(proto, dst_port)` against the
+/// canonical table (BC-1.02.004 + D-010). A match is always `PortHeuristic`
+/// (heuristic, never authoritative — DI-008); no match, a transport mismatch, or
+/// a portless flow (`dst_port == None`) is `Unknown` with `service == None`.
+/// `DpiConfirmed` is reserved for future DPI adapters and never produced here.
+pub fn infer_service(proto: &Proto, dst_port: Option<u16>) -> (Option<Service>, ServiceSource) {
+    let Some(port) = dst_port else {
+        return (None, ServiceSource::Unknown);
+    };
+    // D-010 (human decision overriding BC-1.02.004 EC-004): DNP3 and EtherNet/IP
+    // match TCP *and* UDP; IT services (HTTP/HTTPS/DNS/NTP) are included.
+    let service = match (proto, port) {
+        (Proto::Tcp, 502) => Some(Service::Modbus),
+        (Proto::Tcp | Proto::Udp, 20000) => Some(Service::Dnp3),
+        (Proto::Tcp | Proto::Udp, 44818) => Some(Service::EtherNetIp),
+        (Proto::Tcp, 102) => Some(Service::S7comm),
+        (Proto::Udp, 47808) => Some(Service::Bacnet),
+        (Proto::Tcp, 4840) => Some(Service::OpcUa),
+        (Proto::Tcp, 80) => Some(Service::Other("HTTP".to_string())),
+        (Proto::Tcp, 443) => Some(Service::Other("HTTPS".to_string())),
+        (Proto::Udp, 53) => Some(Service::Other("DNS".to_string())),
+        (Proto::Udp, 123) => Some(Service::Other("NTP".to_string())),
+        _ => None,
+    };
+    match service {
+        Some(s) => (Some(s), ServiceSource::PortHeuristic),
+        None => (None, ServiceSource::Unknown),
+    }
+}
+
 impl<R: BufRead> Iterator for ZeekAdapter<R> {
-    type Item = Result<Flow, FlowParseError>;
+    type Item = Result<Flow, IngestError>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            // A fatal error (cap breach) was already yielded — stop cleanly.
+            return None;
+        }
         loop {
             self.buf.clear();
             // Read raw bytes (not `read_line`) so a non-UTF-8 byte does not abort
@@ -168,7 +243,7 @@ impl<R: BufRead> Iterator for ZeekAdapter<R> {
 }
 
 impl<R: BufRead> RealitySource for ZeekAdapter<R> {
-    fn flows(&mut self) -> impl Iterator<Item = Result<Flow, FlowParseError>> {
+    fn flows(&mut self) -> impl Iterator<Item = Result<Flow, IngestError>> {
         self.by_ref()
     }
 }
