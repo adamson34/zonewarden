@@ -106,15 +106,17 @@ stories:
     notes: "idmz::check (DI-006 OT<->IT truth table via is_ot/is_it; additive, no verdict; EXTERNAL-by-identity + multicast exclusions); Kani VP-1.04.007-a VERIFIED. 8 tests. Inline TDD on dev."
 
   S-4.03:
-    status: ready
+    status: done
     wave: 4
     points: 8
     blocked_by: [S-3.02, S-4.02, S-4.01]
-    branch: null
+    branch: dev
     worktree: null
+    commit: 68eeb04
+    notes: "classifier::classify -> Verdict (IntraZone/Allowed/WrongDirection/NoMatchingConduit; union match; portless=Any; additive IDMZ) + violations_for (graded Violations); Violation expanded with flow fields. 15 tests. Inline TDD on dev."
 
   S-4.04:
-    status: blocked
+    status: ready
     wave: 4
     points: 5
     blocked_by: [S-4.03]
