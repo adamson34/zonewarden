@@ -126,15 +126,17 @@ stories:
     notes: "classify dst_kind param + MulticastExempt first-branch short-circuit; Kani VP-1.04.010 verdict totality VERIFIED. Classification core complete. 5 tests. Inline TDD on dev."
 
   S-5.02:
-    status: ready
+    status: done
     wave: 5
     points: 8
     blocked_by: [S-4.04, S-5.01]
-    branch: null
+    branch: dev
     worktree: null
+    commit: 744d053
+    notes: "aggregator::aggregate (DI-015 identity by construction; checked_inc -> TallyOverflow; idmz/external/distinct diagnostics; digest). Closes WAVE3-004 (E-SYS-003 consumed). Item=(Verdict,Vec<Violation>). 8 tests + identity proptest. Inline TDD on dev."
 
   S-5.03:
-    status: blocked
+    status: ready
     wave: 5
     points: 5
     blocked_by: [S-5.02]
