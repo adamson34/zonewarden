@@ -1,10 +1,10 @@
 ---
 document_type: behavioral-contract
 level: L3
-version: "1.0"
+version: "1.1"
 status: draft
 producer: product-owner
-timestamp: 2026-06-17T00:00:00
+timestamp: 2026-06-26T00:00:00
 phase: 1a
 inputs: [domain-spec/L2-INDEX.md]
 input-hash: "[live-state]"
@@ -14,7 +14,7 @@ subsystem: "SS-02"
 capability: "CAP-004"
 lifecycle_status: active
 introduced: v0.1.0
-modified: []
+modified: ["v1.1 (2026-06-26, D-010): DNP3 & EtherNet/IP match TCP+UDP; IT services HTTP/HTTPS/DNS/NTP added"]
 deprecated: null
 deprecated_by: null
 replacement: null
@@ -27,18 +27,30 @@ removal_reason: null
 
 ## Description
 
-After a flow record is parsed, the app-layer service is inferred by matching the `(dst_port, proto)` pair against the canonical OT service/port table. If the pair matches a table entry exactly, `service_source = PortHeuristic`. If no match, `service_source = Unknown`. `DpiConfirmed` is an enum variant reserved for future DPI-capable adapters; the MVP Zeek conn.log adapter never produces it (OQ-002). Inference is always marked as heuristic (DI-008) — the inferred service is never presented as authoritative. Port-only matching is not performed if the transport does not match the canonical entry.
+After a flow record is parsed, the app-layer service is inferred by matching the `(dst_port, proto)` pair against the canonical service/port table. If the pair matches a table entry exactly, `service_source = PortHeuristic`. If no match, `service_source = Unknown`. `DpiConfirmed` is an enum variant reserved for future DPI-capable adapters; the MVP Zeek conn.log adapter never produces it (OQ-002). Inference is always marked as heuristic (DI-008) — the inferred service is never presented as authoritative. Port-only matching is not performed if the transport does not match the canonical entry.
 
-**Canonical MVP service/port table (from entities.md):**
+**Canonical service/port table (v1.1, D-010):**
 
 | Service | Port | Transport |
 |---------|------|-----------|
 | Modbus | 502 | TCP |
-| DNP3 | 20000 | TCP |
-| EtherNet/IP | 44818 | TCP |
+| DNP3 | 20000 | TCP, UDP |
+| EtherNet/IP | 44818 | TCP, UDP |
 | S7comm | 102 | TCP |
 | BACnet/IP | 47808 | UDP |
 | OPC UA | 4840 | TCP |
+| HTTP | 80 | TCP |
+| HTTPS | 443 | TCP |
+| DNS | 53 | UDP |
+| NTP | 123 | UDP |
+
+> **D-010 (2026-06-26, human decision):** Supersedes the original v1.0 table.
+> DNP3 and EtherNet/IP now match **both** TCP and UDP (real-world DNP3 and
+> EtherNet/IP run over UDP too), reversing the v1.0 EC-004 TCP-only ruling. The
+> common IT services HTTP/HTTPS/DNS/NTP are added so the report can label
+> non-OT traffic. OT services map to dedicated `Service` variants; IT services
+> map to `Service::Other("HTTP" | "HTTPS" | "DNS" | "NTP")`. All remain
+> `PortHeuristic` (DI-008).
 
 ## Preconditions
 
@@ -68,7 +80,7 @@ After a flow record is parsed, the app-layer service is inferred by matching the
 | EC-001 | `dst_port=502, proto=TCP` | `service=Modbus, service_source=PortHeuristic` |
 | EC-002 | `dst_port=502, proto=UDP` (transport mismatch) | `service=None, service_source=Unknown` (DEC-008) |
 | EC-003 | `dst_port=1502, proto=TCP` (Modbus on non-default port) | `service=None, service_source=Unknown` (DEC-007) |
-| EC-004 | `dst_port=20000, proto=UDP` (DNP3 UDP variant) | `Unknown` — UDP/20000 is not in the canonical TCP-only DNP3 entry (ASM-009) |
+| EC-004 | `dst_port=20000, proto=UDP` (DNP3 UDP variant) | `service=DNP3, service_source=PortHeuristic` — DNP3 matches TCP and UDP (D-010; supersedes the v1.0 TCP-only ASM-009 ruling) |
 | EC-005 | `dst_port=102, proto=TCP` (S7comm or IEC 61850 MMS) | `service=S7comm, service_source=PortHeuristic` — known ambiguity; port 102/TCP always infers S7comm in MVP (ASM-009) |
 | EC-006 | ICMP flow (`proto=ICMP, dst_port=None`) | `service=None, service_source=Unknown` |
 | EC-007 | `dst_port=47808, proto=UDP` (BACnet) | `service=BACnet, service_source=PortHeuristic` |

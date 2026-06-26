@@ -56,12 +56,14 @@ stories:
     notes: "validator::validate -> ValidatedPolicy{policy,prefix_index,warnings}; E-POL-005/006/007/008; ipnet IpNet prefix index (desc by len); zero-member + short-prefix warnings. 17 tests. AC-005 (token legality) enforced at load layer (policy_load_tests). Inline TDD on dev."
 
   S-2.02:
-    status: ready
+    status: done
     wave: 3
     points: 5
     blocked_by: [S-2.01]
-    branch: null
+    branch: dev
     worktree: null
+    commit: 2327a66
+    notes: "infer_service (canonical table; D-010: DNP3+EtherNetIP TCP+UDP, IT services HTTP/HTTPS/DNS/NTP); ingest cap SysError::CapExceeded (E-SYS-001), validate_max_flows (E-SYS-002); IngestError{Parse|Sys} refactor of flow stream. 14 tests. Inline TDD on dev."
 
   S-5.01:
     status: ready

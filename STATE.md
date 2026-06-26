@@ -11,7 +11,7 @@ input-hash: "[live-state]"
 traces_to: ""
 project: "zonewarden"
 mode: "greenfield"
-current_step: "phase-3 TDD — Wave 3 in progress (S-1.03 done); S-2.02 + S-5.01 ready"
+current_step: "phase-3 TDD — Wave 3 in progress (S-1.03 + S-2.02 done); S-5.01 ready (last Wave 3 story)"
 current_cycle: "zonewarden-greenfield"
 dtu_required: false
 ---
@@ -36,7 +36,7 @@ dtu_required: false
 | **Started** | 2026-06-17 |
 | **Last Updated** | 2026-06-26 |
 | **Current Phase** | 3 |
-| **Current Step** | Phase 3 TDD — Wave 3 in progress (5/17): S-1.03 done; S-2.02 + S-5.01 ready |
+| **Current Step** | Phase 3 TDD — Wave 3 in progress (6/17): S-1.03 + S-2.02 done; S-5.01 ready (last Wave 3 story) |
 
 ## Phase Progress
 
@@ -45,7 +45,7 @@ dtu_required: false
 | 0: Codebase Ingestion | n/a (greenfield) | | | | |
 | 1: Spec Crystallization | COMPLETE | 2026-06-17 | 2026-06-17 | passed | 8 adversarial passes: 14→16→11→15→9→5→9→15; ~93 findings fixed; 0 CRIT ×6, all HIGH-to-date fixed. L2 FROZEN at v1.8 (D-009). Loop not converging to 0-HIGH (novelty 1.0) — accepted sound + proceeded to PRD. Pass-8 MED/LOW = backlog. |
 | 2: Story Decomposition | COMPLETE | 2026-06-17 | 2026-06-17 | passed | 6 epics, 17 stories, 5 waves, 10 holdout scenarios, 44/44 BC coverage, acyclic |
-| 3: TDD Implementation | in-progress | 2026-06-17 | | | Waves 1-2 COMPLETE + GATE PASSED; Wave 3 in progress (1/3): S-1.01, S-1.02, S-4.01, S-2.01, S-1.03 DONE. 5/17 stories; 66 tests green (release) incl proptests; clippy -D + fmt clean. S-1.03 = validator (E-POL-005..008, ipnet prefix index, 9d8575d). Wave 3 remaining: S-2.02, S-5.01 (both ready). |
+| 3: TDD Implementation | in-progress | 2026-06-17 | | | Waves 1-2 COMPLETE + GATE PASSED; Wave 3 in progress (2/3): S-1.01, S-1.02, S-4.01, S-2.01, S-1.03, S-2.02 DONE. 6/17 stories; 80 tests green (release) incl proptests; clippy -D + fmt clean. S-2.02 = service inference (D-010) + ingest cap + IngestError refactor (2327a66). Wave 3 remaining: S-5.01 (ready). |
 | 4: Holdout Evaluation | not-started | | | | |
 | 5: Adversarial Refinement | not-started | | | | |
 | 6: Formal Hardening | not-started | | | | |
@@ -85,7 +85,8 @@ dtu_required: false
 | TDD: S-2.01 Zeek parser | (inline TDD) | completed | zonewarden::adapters::zeek + RealitySource + FlowParseError; 19 tests + proptests; commit f9a7ee4 |
 | Wave 2 integration gate | wave-gate | completed | PASSED 2026-06-26; 2 HIGH fixed (de2b4c9); report: cycles/zonewarden-greenfield/adversarial-reviews/wave-2-gate.md |
 | TDD: S-1.03 policy validation | (inline TDD) | completed | zonewarden-core::validator (E-POL-005..008, ipnet prefix index); 17 tests; commit 9d8575d |
-| TDD: Wave 3 remaining | — | next | S-2.02 service/cap, S-5.01 policy digest (both ready) |
+| TDD: S-2.02 service inference + cap | (inline TDD) | completed | infer_service (D-010), ingest cap (E-SYS-001/002), IngestError refactor; 14 tests; commit 2327a66 |
+| TDD: Wave 3 remaining | — | next | S-5.01 policy digest (ready; last Wave 3 story) |
 
 ## Decisions Log
 
@@ -100,6 +101,7 @@ dtu_required: false
 | D-007 | Time budget = open-ended / learning-first | Optimize for full factory rigor + learning over speed | 1 | 2026-06-17 | human |
 | D-008 | Spec convergence rule = 2 consecutive passes with 0 CRIT + 0 HIGH (not 3 fully-clean passes); MED/LOW residuals tracked as backlog | Adversary novelty stayed 1.0 with oscillating count (14→16→11→15); pure clean-pass goal unlikely to terminate; spec is sound (0 CRIT). Pragmatic, defensible stopping rule | 1 | 2026-06-17 | human |
 | D-009 | Freeze L2 domain spec at v1.8 and proceed to PRD without meeting D-008 | After 8 passes the loop did not converge to 0-HIGH (oscillating 5→9→15, novelty 1.0); spec is sound (0 CRIT ×6, all HIGH-to-date fixed); remaining edge semantics are better pinned as PRD behavioral contracts + TDD tests; diminishing returns for the portfolio goal. Pass-8 MED/LOW carried as backlog | 1 | 2026-06-17 | human |
+| D-010 | Service table: DNP3 & EtherNet/IP match TCP+UDP (not TCP-only); add IT services HTTP/HTTPS/DNS/NTP | Real-world DNP3/EtherNet/IP also run over UDP; labeling common IT traffic improves the report. Supersedes BC-1.02.004 v1.0 EC-004 (TCP-only / ASM-009). BC-1.02.004 bumped to v1.1 to keep spec↔code in sync (no drift) | 3 | 2026-06-26 | human |
 
 ## Skip Log
 
@@ -119,7 +121,7 @@ dtu_required: false
 | Field | Value |
 |-------|-------|
 | **Date** | 2026-06-26 |
-| **Position** | Phase 3 (TDD). Waves 1-2 COMPLETE on dev (4/17): S-1.01 workspace+PortSet; S-1.02 policy YAML load; S-4.01 severity (DI-017 single source, commit 4e95c29); S-2.01 Zeek conn.log parser — zonewarden::adapters::zeek + RealitySource trait + FlowParseError, conn_state reuses severity (commit f9a7ee4). ~60 tests green incl proptests, clippy -D warnings clean, fmt clean. Repo: 3-branch model (main/dev/factory-artifacts worktree); code on dev. Wave 2 GATE PASSED 2026-06-26 (de2b4c9 fixed 2 HIGH). Wave 3 in progress: S-1.03 validator DONE (9d8575d; E-POL-005..008, ipnet prefix index sorted desc; zero-member+short-prefix warnings). NEXT: S-2.02 service inference + ingest cap, S-5.01 policy digest (both ready). Deferred/backlog: service_source inference -> S-2.02; cargo-fuzz target + WAVE2-006 (brittle YAML err classification) -> Phase 6; WAVE2-005 (sl_t empty-mapping `{}` -> SlTarget{None,None}) is a LOAD-layer fix in policy.rs SlTargetYaml::into_core (NOT closed by S-1.03 validator) — small follow-up, still OPEN; demo+holdout gates -> Wave 5 (need CLI). |
+| **Position** | Phase 3 (TDD). Waves 1-2 COMPLETE on dev (4/17): S-1.01 workspace+PortSet; S-1.02 policy YAML load; S-4.01 severity (DI-017 single source, commit 4e95c29); S-2.01 Zeek conn.log parser — zonewarden::adapters::zeek + RealitySource trait + FlowParseError, conn_state reuses severity (commit f9a7ee4). ~60 tests green incl proptests, clippy -D warnings clean, fmt clean. Repo: 3-branch model (main/dev/factory-artifacts worktree); code on dev. Wave 2 GATE PASSED 2026-06-26 (de2b4c9 fixed 2 HIGH). Wave 3 in progress (2/3): S-1.03 validator DONE (9d8575d); S-2.02 service inference + ingest cap DONE (2327a66; D-010 — DNP3/EtherNetIP TCP+UDP + IT services; BC-1.02.004 bumped v1.1 to match; IngestError{Parse|Sys} refactor of the flow stream). NEXT: S-5.01 policy digest (ready, last Wave 3 story). Deferred/backlog: cargo-fuzz target + WAVE2-006 (brittle YAML err classification) -> Phase 6; WAVE2-005 (sl_t empty-mapping `{}` -> SlTarget{None,None}) is a LOAD-layer fix in policy.rs SlTargetYaml::into_core — small follow-up, still OPEN; demo+holdout gates -> Wave 5 (need CLI); SysError::TallyOverflow (E-SYS-003) defined, consumed by S-5.02 aggregator. |
 | **Convergence counter** | spec loop closed by D-009 (not via D-008 streak) |
 
 ## Historical Content
