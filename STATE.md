@@ -11,7 +11,7 @@ input-hash: "[live-state]"
 traces_to: ""
 project: "zonewarden"
 mode: "greenfield"
-current_step: "phase-3 TDD — Wave 5 in progress (S-5.02 done); S-5.03 ready"
+current_step: "phase-3 TDD — Wave 5 in progress (S-5.02 + S-5.03 done); S-6.01 reporter ready"
 current_cycle: "zonewarden-greenfield"
 dtu_required: false
 ---
@@ -36,7 +36,7 @@ dtu_required: false
 | **Started** | 2026-06-17 |
 | **Last Updated** | 2026-06-26 |
 | **Current Phase** | 3 |
-| **Current Step** | Phase 3 TDD — Wave 5 in progress (13/17): S-5.02 done; S-5.03 ready |
+| **Current Step** | Phase 3 TDD — Wave 5 in progress (14/17): S-5.02 + S-5.03 done; S-6.01 reporter ready |
 
 ## Phase Progress
 
@@ -45,7 +45,7 @@ dtu_required: false
 | 0: Codebase Ingestion | n/a (greenfield) | | | | |
 | 1: Spec Crystallization | COMPLETE | 2026-06-17 | 2026-06-17 | passed | 8 adversarial passes: 14→16→11→15→9→5→9→15; ~93 findings fixed; 0 CRIT ×6, all HIGH-to-date fixed. L2 FROZEN at v1.8 (D-009). Loop not converging to 0-HIGH (novelty 1.0) — accepted sound + proceeded to PRD. Pass-8 MED/LOW = backlog. |
 | 2: Story Decomposition | COMPLETE | 2026-06-17 | 2026-06-17 | passed | 6 epics, 17 stories, 5 waves, 10 holdout scenarios, 44/44 BC coverage, acyclic |
-| 3: TDD Implementation | in-progress | 2026-06-17 | | | Waves 1-4 COMPLETE + gated; Wave 5 in progress (1/5): + S-5.02 aggregator DONE. 13/17 stories; 147 tests green + 3 Kani proofs; clippy -D + fmt clean. S-5.02 = ConformanceResult aggregation (DI-015 identity + checked overflow, 744d053); closes WAVE3-004. Wave 5 remaining: S-5.03 sort, S-6.01/02/03 (report + CLI). |
+| 3: TDD Implementation | in-progress | 2026-06-17 | | | Waves 1-4 COMPLETE + gated; Wave 5 in progress (2/5): + S-5.02, S-5.03 DONE. 14/17 stories; 153 tests green + 3 Kani proofs; clippy -D + fmt clean. S-5.03 = deterministic violation sort (DI-009, 679deba). Wave 5 remaining: S-6.01 reporter (JSON/text/Mermaid), S-6.02 atomic write, S-6.03 CLI. |
 | 4: Holdout Evaluation | not-started | | | | |
 | 5: Adversarial Refinement | not-started | | | | |
 | 6: Formal Hardening | not-started | | | | |
@@ -95,7 +95,8 @@ dtu_required: false
 | TDD: S-4.04 multicast-exempt + totality | (inline TDD) | completed | classify dst_kind + MulticastExempt short-circuit; Kani VP-1.04.010 verified; 5 tests; commit 5d4087a |
 | Wave 4 integration gate | wave-gate | completed | PASSED 2026-06-26; 0 CRIT/HIGH, 1 MED + 3 LOW backlogged; report: cycles/zonewarden-greenfield/adversarial-reviews/wave-4-gate.md |
 | TDD: S-5.02 aggregator | (inline TDD) | completed | aggregator::aggregate + checked_inc (DI-015 + overflow); closes WAVE3-004; 8 tests + proptest; commit 744d053 |
-| TDD: Wave 5 remaining | — | next | S-5.03 deterministic sort + empty-input; then S-6.01 reporter, S-6.02 atomic write, S-6.03 CLI |
+| TDD: S-5.03 violation sort | (inline TDD) | completed | DI-009 total-order sort; Proto Ord + Violation ts; 6 tests; commit 679deba |
+| TDD: Wave 5 remaining | — | next | S-6.01 reporter (JSON/text/Mermaid, 8pts); then S-6.02 atomic write, S-6.03 CLI |
 
 ## Decisions Log
 
@@ -130,7 +131,7 @@ dtu_required: false
 | Field | Value |
 |-------|-------|
 | **Date** | 2026-06-26 |
-| **Position** | Phase 3 (TDD). Waves 1-2 COMPLETE on dev (4/17): S-1.01 workspace+PortSet; S-1.02 policy YAML load; S-4.01 severity (DI-017 single source, commit 4e95c29); S-2.01 Zeek conn.log parser — zonewarden::adapters::zeek + RealitySource trait + FlowParseError, conn_state reuses severity (commit f9a7ee4). ~60 tests green incl proptests, clippy -D warnings clean, fmt clean. Repo: 3-branch model (main/dev/factory-artifacts worktree); code on dev. Wave 2 GATE PASSED 2026-06-26 (de2b4c9 fixed 2 HIGH). Wave 3 COMPLETE (3/3): S-1.03 validator (9d8575d); S-2.02 service inference + ingest cap (2327a66; D-010; BC-1.02.004 v1.1; IngestError refactor); S-5.01 policy digest (5fdd5fa; canonical JSON + SHA-256, serde_json+sha2 in core per ADR-004). Wave 3 GATE PASSED 2026-06-26. Wave 4 COMPLETE — the classification core is DONE: resolver (351a2e7), multicast (b2440fd), IDMZ (b2f81b4), classifier (68eeb04), multicast-exempt+totality (5d4087a). 3 Kani proofs verified (VP-1.03.001-a, VP-1.04.007-a, VP-1.04.010). Wave 4 GATE PASSED 2026-06-26 (report: cycles/zonewarden-greenfield/adversarial-reviews/wave-4-gate.md): 0 CRIT/0 HIGH; classification core verified correct. Wave 5 in progress (1/5): S-5.02 aggregator DONE (744d053; DI-015 identity + checked overflow; closes WAVE3-004). NEXT: S-5.03 deterministic sort + empty-input (ready), then S-6.01 reporter (JSON/text/Mermaid), S-6.02 atomic write, S-6.03 CLI -> first runnable end-to-end tool. OPEN BACKLOG: WAVE4-001 (multicast DstKind channel vs BC-1.03.003/004 MatchKind postconditions — PO/spec adjudication; recommend sanction DstKind + amend BCs; PC2 resolve-skip -> S-6.03 pipeline); WAVE4-003 (strengthen classifier Kani harness -> Phase 6); WAVE3-001 (validator warnings-on-error -> PO); WAVE3-005 (dup-id spans -> spec). CLOSED: WAVE3-004 (S-5.02), WAVE3-002 (S-3.01), WAVE4-004 (S-5.02 aggregator avoids redundant level_of — aggregate reads only verdict fields, no per-flow level lookup). Wave 3 gate backlog: WAVE3-002 CLOSED in S-3.01 (IPv4-mapped member canonicalization). Still open: WAVE3-001 (validator warnings on Err path — PO adjudicate BC-1.01.004 inv 4); WAVE3-004 (E-SYS-003 -> S-5.02); WAVE3-005 (dup-id "both occurrences" -> spec wording). Deferred/backlog: cargo-fuzz target + WAVE2-006 (brittle YAML err classification) -> Phase 6; WAVE2-005 (sl_t empty-mapping `{}` -> SlTarget{None,None}) is a LOAD-layer fix in policy.rs SlTargetYaml::into_core — small follow-up, still OPEN; demo+holdout gates -> Wave 5 (need CLI); SysError::TallyOverflow (E-SYS-003) defined, consumed by S-5.02 aggregator. |
+| **Position** | Phase 3 (TDD). Waves 1-2 COMPLETE on dev (4/17): S-1.01 workspace+PortSet; S-1.02 policy YAML load; S-4.01 severity (DI-017 single source, commit 4e95c29); S-2.01 Zeek conn.log parser — zonewarden::adapters::zeek + RealitySource trait + FlowParseError, conn_state reuses severity (commit f9a7ee4). ~60 tests green incl proptests, clippy -D warnings clean, fmt clean. Repo: 3-branch model (main/dev/factory-artifacts worktree); code on dev. Wave 2 GATE PASSED 2026-06-26 (de2b4c9 fixed 2 HIGH). Wave 3 COMPLETE (3/3): S-1.03 validator (9d8575d); S-2.02 service inference + ingest cap (2327a66; D-010; BC-1.02.004 v1.1; IngestError refactor); S-5.01 policy digest (5fdd5fa; canonical JSON + SHA-256, serde_json+sha2 in core per ADR-004). Wave 3 GATE PASSED 2026-06-26. Wave 4 COMPLETE — the classification core is DONE: resolver (351a2e7), multicast (b2440fd), IDMZ (b2f81b4), classifier (68eeb04), multicast-exempt+totality (5d4087a). 3 Kani proofs verified (VP-1.03.001-a, VP-1.04.007-a, VP-1.04.010). Wave 4 GATE PASSED 2026-06-26 (report: cycles/zonewarden-greenfield/adversarial-reviews/wave-4-gate.md): 0 CRIT/0 HIGH; classification core verified correct. Wave 5 in progress (2/5): S-5.02 aggregator (744d053), S-5.03 deterministic violation sort (679deba; DI-009) DONE. NEXT: S-6.01 reporter — JSON + text + Mermaid formatters (8pts, ready); then S-6.02 atomic write + deterministic warnings, S-6.03 CLI -> first runnable end-to-end tool. NOTE: S-6.01 reporter is the first effectful-shell module of Wave 5 (lives in zonewarden/ crate, not core); will need serde_json in the shell for JSON output. OPEN BACKLOG: WAVE4-001 (multicast DstKind channel vs BC-1.03.003/004 MatchKind postconditions — PO/spec adjudication; recommend sanction DstKind + amend BCs; PC2 resolve-skip -> S-6.03 pipeline); WAVE4-003 (strengthen classifier Kani harness -> Phase 6); WAVE3-001 (validator warnings-on-error -> PO); WAVE3-005 (dup-id spans -> spec). CLOSED: WAVE3-004 (S-5.02), WAVE3-002 (S-3.01), WAVE4-004 (S-5.02 aggregator avoids redundant level_of — aggregate reads only verdict fields, no per-flow level lookup). Wave 3 gate backlog: WAVE3-002 CLOSED in S-3.01 (IPv4-mapped member canonicalization). Still open: WAVE3-001 (validator warnings on Err path — PO adjudicate BC-1.01.004 inv 4); WAVE3-004 (E-SYS-003 -> S-5.02); WAVE3-005 (dup-id "both occurrences" -> spec wording). Deferred/backlog: cargo-fuzz target + WAVE2-006 (brittle YAML err classification) -> Phase 6; WAVE2-005 (sl_t empty-mapping `{}` -> SlTarget{None,None}) is a LOAD-layer fix in policy.rs SlTargetYaml::into_core — small follow-up, still OPEN; demo+holdout gates -> Wave 5 (need CLI); SysError::TallyOverflow (E-SYS-003) defined, consumed by S-5.02 aggregator. |
 | **Convergence counter** | spec loop closed by D-009 (not via D-008 streak) |
 
 ## Historical Content

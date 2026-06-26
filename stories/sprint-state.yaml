@@ -136,15 +136,17 @@ stories:
     notes: "aggregator::aggregate (DI-015 identity by construction; checked_inc -> TallyOverflow; idmz/external/distinct diagnostics; digest). Closes WAVE3-004 (E-SYS-003 consumed). Item=(Verdict,Vec<Violation>). 8 tests + identity proptest. Inline TDD on dev."
 
   S-5.03:
-    status: ready
+    status: done
     wave: 5
     points: 5
     blocked_by: [S-5.02]
-    branch: null
+    branch: dev
     worktree: null
+    commit: 679deba
+    notes: "aggregate sorts violations by DI-009 total-order key (ts,src_ip,src_port,dst_ip,dst_port,proto,flow_index); Proto: Ord; Violation gains ts field. 6 tests incl determinism proptest. Inline TDD on dev."
 
   S-6.01:
-    status: blocked
+    status: ready
     wave: 5
     points: 8
     blocked_by: [S-5.03]
