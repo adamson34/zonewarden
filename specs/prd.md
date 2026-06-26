@@ -395,7 +395,7 @@ See `prd-supplements/error-taxonomy.md` for complete catalog with message format
 | Zeek conn_state | Bucket | Rationale |
 |-----------------|--------|-----------|
 | S0 | Attempted | SYN sent, no response |
-| S1 | Attempted | SYN+SYN/ACK, no FIN (partially established — conservative: handshake not complete) |
+| S1 | Established | Connection established, not terminated — a CONFIRMED established connection. Grading Attempted would under-report a breach, violating DI-017 (corrected in Phase 5 / P5-CORE-003). |
 | S2 | Established | Connection established; FIN seen but no reply |
 | S3 | Established | Connection established; FIN seen from both sides, no final ACK |
 | SF | Established | Normal close |

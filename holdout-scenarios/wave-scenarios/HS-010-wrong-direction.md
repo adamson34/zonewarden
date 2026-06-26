@@ -31,10 +31,10 @@ retired: null
    One conduit: field→control, TCP/502, direction=forward.
 2. Flow log: two flows:
    - Flow A: src=10.0.1.5:1234, dst=10.0.2.10:502, TCP/SF — correctly directed (field→control)
-   - Flow B: src=10.0.2.10:502, dst=10.0.1.5:1234, TCP/SF — reverse-directed (control→field)
+   - Flow B: src=10.0.2.10:40000, dst=10.0.1.5:502, TCP/SF — reverse-directed (control→field), reaching field's service port (dst:502)
 3. zonewarden is run.
 4. Flow A: `Allowed` (conduit matches).
-5. Flow B: `WrongDirection` (not `NoMatchingConduit` — the conduit exists but direction is wrong).
+5. Flow B: `WrongDirection` (not `NoMatchingConduit` — the conduit exists but direction is wrong). The matched port is the RESPONDER (dst) port per BC-1.04.004 inv 2 / DEC-016: Flow B's dst:502 matches the conduit port in the reverse orientation. A reverse flow whose dst-port matched no conduit would be NoMatchingConduit even if its SOURCE port were 502 (the src-port is not a reliable return-traffic signal — P5-CORE-002).
 6. Exit code is 1 (violation: WrongDirection).
 7. `wrong_direction` tally is 1; `no_matching_conduit` is 0.
 

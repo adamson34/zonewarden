@@ -34,7 +34,7 @@ Every `Violation` entry carries a `Severity` field: `Attempted` or `Established`
 | Zeek conn_state | Severity |
 |-----------------|---------|
 | S0 | Attempted |
-| S1 | Attempted |
+| S1 | Established |
 | S2 | Established |
 | S3 | Established |
 | SF | Established |
