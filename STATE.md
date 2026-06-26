@@ -11,7 +11,7 @@ input-hash: "[live-state]"
 traces_to: ""
 project: "zonewarden"
 mode: "greenfield"
-current_step: "phase-5 COMPLETE (full-codebase adversarial refinement); ready for Phase 6 (formal hardening)"
+current_step: "phase-6 COMPLETE (formal hardening: 7 Kani proofs + fuzzing + deny + mutation); ready for Phase 7 (convergence)"
 current_cycle: "zonewarden-greenfield"
 dtu_required: false
 ---
@@ -36,7 +36,7 @@ dtu_required: false
 | **Started** | 2026-06-17 |
 | **Last Updated** | 2026-06-26 |
 | **Current Phase** | 3 |
-| **Current Step** | Phase 5 COMPLETE — full-codebase adversarial refinement done (190 tests); ready for Phase 6 |
+| **Current Step** | Phase 6 COMPLETE — 7 Kani proofs verified, parsers fuzzed clean, supply chain clean; ready for Phase 7 |
 
 ## Phase Progress
 
@@ -48,7 +48,7 @@ dtu_required: false
 | 3: TDD Implementation | COMPLETE | 2026-06-17 | 2026-06-26 | passed | ALL 17 stories done; ALL 5 wave gates PASSED. Wave 5 gate (final): 187 tests, 6/6 gates — Gate 3 fixed 2 HIGH+2 MED reporter defects; Gate 5 holdout mean 0.97 (HS-010 WrongDirection fixed from 0.20→1.00, HS-008 no regression). zonewarden is a verified runnable MVP. 3 Kani proofs; clippy -D + fmt clean. |
 | 4: Holdout Evaluation | not-started | | | | |
 | 5: Adversarial Refinement | COMPLETE | 2026-06-26 | 2026-06-26 | passed | Full-codebase pass (3 lenses). 12 findings; 4 fixed (P5-CORE-001 /0-fold security, P5-IO-001 OOM DoS, P5-IO-005 temp O_EXCL, P5-IO-006 output!=input), 2 PO-adjudicated (WrongDirection→spec, S1→Established). Rest backlogged to Phase 6/spec. 190 tests; clippy -D + fmt clean. Report: cycles/.../phase-5-refinement.md |
-| 6: Formal Hardening | not-started | | | | |
+| 6: Formal Hardening | COMPLETE | 2026-06-26 | 2026-06-26 | passed | 7 Kani proofs all SUCCESSFUL (VP-002/006/010 newly delivered; VP-001/003/004 re-confirmed; VP-008 partial-unwinds, proptest-covered). cargo-fuzz: zeek 1.27M + policy 2.18M runs, 0 panics. cargo-deny clean. YAML-bomb guarded. cargo-mutants surfaced + fixed a digest golden-value gap (digest kill 0→84%). Report: cycles/.../phase-6-hardening.md |
 | 7: Convergence | not-started | | | | |
 
 ## Current Phase Steps

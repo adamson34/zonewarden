@@ -20,22 +20,22 @@ traces_to: specs/architecture/ARCH-INDEX.md
 
 | VP ID | Title | Module | Invariant | Proof Method | Phase | Status |
 |-------|-------|--------|-----------|-------------|-------|--------|
-| VP-001 | Total Endpoint Resolution | `resolver` | DI-003 | kani | P0 | draft |
-| VP-002 | Longest-Prefix Totality and Uniqueness | `resolver` | DI-004 | kani | P0 | draft |
-| VP-003 | IDMZ No-Bypass Rule | `idmz` | DI-006 | kani | P0 | draft |
-| VP-004 | Verdict Totality | `classifier` | DI-015 | kani | P0 | draft |
+| VP-001 | Total Endpoint Resolution | `resolver` | DI-003 | kani | P0 | verified |
+| VP-002 | Longest-Prefix Totality and Uniqueness | `resolver` | DI-004 | kani | P0 | verified |
+| VP-003 | IDMZ No-Bypass Rule | `idmz` | DI-006 | kani | P0 | verified |
+| VP-004 | Verdict Totality | `classifier` | DI-015 | kani | P0 | verified |
 | VP-005 | Accounting Identity and Bounds | `aggregator` | DI-015 | proptest | P0 | draft |
-| VP-006 | Tally Overflow Detection | `aggregator` | FM-009 | kani | P0 | draft |
+| VP-006 | Tally Overflow Detection | `aggregator` | FM-009 | kani | P0 | verified |
 | VP-007 | Digest Stability | `digest` | DI-018 | proptest | P0 | draft |
-| VP-008 | PortSet Canonical Form | `portset` | DI-020 | kani + proptest | P0 | draft |
+| VP-008 | PortSet Canonical Form | `portset` | DI-020 | kani + proptest | P0 | partial (proptest verified; Kani harness unwinds) |
 | VP-009 | Offline Purity — No Network I/O | `zonewarden-core` | DI-012 | manual (cargo deny + strace) | P0 | draft |
-| VP-010 | Multicast/Broadcast Exemption Detection | `multicast` | DI-016 | kani | P0 | draft |
+| VP-010 | Multicast/Broadcast Exemption Detection | `multicast` | DI-016 | kani | P0 | verified |
 
 ## Tool Summary
 
 | Tool | VP Count | VPs |
 |------|---------|-----|
-| Kani | 6 | VP-001, VP-002, VP-003, VP-004, VP-006, VP-008 (partial), VP-010 |
+| Kani | 7 | VP-001, VP-002, VP-003, VP-004, VP-006, VP-008 (partial), VP-010 |
 | proptest | 3 | VP-005, VP-007, VP-008 (partial) |
 | manual/structural | 1 | VP-009 |
 
