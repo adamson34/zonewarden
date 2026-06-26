@@ -156,17 +156,21 @@ stories:
     notes: "reporter::emit_json/text/mermaid (shell DTOs, schema v1.0; heuristic-flagged text; sorted deterministic Mermaid). serde_json in shell. 12 tests. Inline TDD on dev."
 
   S-6.02:
-    status: ready
+    status: done
     wave: 5
     points: 3
     blocked_by: [S-6.01]
-    branch: null
+    branch: dev
     worktree: null
+    commit: ab85916
+    notes: "reporter::emit_to_file (atomic temp+rename, E-IO-005/006) + emit_warnings (stderr, ordered); offline source-test. 7 tests. Inline TDD on dev."
 
   S-6.03:
-    status: blocked
+    status: done
     wave: 5
     points: 8
     blocked_by: [S-6.02, S-2.02]
-    branch: null
+    branch: dev
     worktree: null
+    commit: 4247572
+    notes: "cli (clap) — args, full pipeline orchestration, exit codes (0/1/2); main wires it. zonewarden runnable end-to-end. 13 integration tests + exit_status unit. Inline TDD on dev. (also fixed gitignore swallowing *.log fixtures, 665364f)"
