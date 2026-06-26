@@ -2,4 +2,5 @@
 //! (YAML policy loading, flow ingest, reporting). The `main` binary is a thin
 //! wrapper over these modules; integration tests exercise them directly.
 
+pub mod adapters;
 pub mod policy;
