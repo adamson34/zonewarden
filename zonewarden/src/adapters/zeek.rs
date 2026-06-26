@@ -54,7 +54,7 @@ pub struct ZeekAdapter<R: BufRead> {
     line_no: u64,
     next_index: u64,
     fields: Option<FieldMap>,
-    buf: String,
+    buf: Vec<u8>,
 }
 
 impl ZeekAdapter<BufReader<File>> {
@@ -77,7 +77,7 @@ impl<R: BufRead> ZeekAdapter<R> {
             line_no: 0,
             next_index: 0,
             fields: None,
-            buf: String::new(),
+            buf: Vec::new(),
         }
     }
 
@@ -134,17 +134,21 @@ impl<R: BufRead> Iterator for ZeekAdapter<R> {
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             self.buf.clear();
-            // A read error mid-stream (e.g. invalid UTF-8) ends the stream rather
-            // than aborting the run; the lines consumed so far are unaffected.
-            let read = self.reader.read_line(&mut self.buf);
+            // Read raw bytes (not `read_line`) so a non-UTF-8 byte does not abort
+            // the stream: it is lossily decoded and that single line is skipped as
+            // malformed, while the rest of the file still parses (BC-1.02.002 /
+            // DI-013). A genuine I/O error ends the stream.
+            let read = self.reader.read_until(b'\n', &mut self.buf);
             match read {
                 Ok(0) | Err(_) => return None,
                 Ok(_) => {}
             }
             self.line_no += 1;
 
-            // Strip the line terminator, tolerating Windows CRLF (EC-007/AC-008).
-            let line = self.buf.trim_end_matches(['\n', '\r']).to_string();
+            // Lossy UTF-8 decode, then strip the line terminator, tolerating
+            // Windows CRLF (EC-007/AC-008).
+            let decoded = String::from_utf8_lossy(&self.buf);
+            let line = decoded.trim_end_matches(['\n', '\r']).to_string();
 
             if line.trim().is_empty() {
                 continue; // blank line → silent skip (not counted)
@@ -194,6 +198,11 @@ fn parse_ts(s: &str, line: u64) -> Result<Timestamp, FlowParseError> {
         .parse()
         .map_err(|_| malformed(line, "unparseable ts seconds"))?;
 
+    // The fractional part must be plain digits — a signed/garbage fraction is
+    // malformed (guards against e.g. `1.-5` computing a wrong value).
+    if !frac_str.bytes().all(|b| b.is_ascii_digit()) {
+        return Err(malformed(line, "unparseable ts fraction"));
+    }
     // Normalize the fractional part to exactly 9 digits (nanoseconds).
     let mut frac = String::with_capacity(9);
     frac.push_str(frac_str);
@@ -201,14 +210,15 @@ fn parse_ts(s: &str, line: u64) -> Result<Timestamp, FlowParseError> {
     while frac.len() < 9 {
         frac.push('0');
     }
-    let nanos: i128 = if frac.is_empty() {
-        0
-    } else {
-        frac.parse()
-            .map_err(|_| malformed(line, "unparseable ts fraction"))?
-    };
+    let nanos: i128 = frac.parse().unwrap_or(0);
 
-    Ok(Timestamp(secs * 1_000_000_000 + nanos))
+    // Checked arithmetic: an out-of-range timestamp is a malformed record
+    // (skipped + counted), never a panic/abort or a silently-wrapped Flow
+    // (BC-1.02.002 / DI-013).
+    secs.checked_mul(1_000_000_000)
+        .and_then(|s| s.checked_add(nanos))
+        .map(Timestamp)
+        .ok_or_else(|| malformed(line, "timestamp out of range"))
 }
 
 /// Parse a Zeek port field. `-` and `0` both mean "no port" (EC-004 / sentinel).

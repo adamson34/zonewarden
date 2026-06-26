@@ -468,3 +468,72 @@ proptest! {
         let _ = drain_str(&raw);
     }
 }
+
+// ── Gate-3 regression tests (Wave 2 adversarial review) ──────────────────────
+
+// WAVE2-001: an out-of-range timestamp must be skipped as malformed, never
+// panic (dev) or silently wrap into a bogus Flow (release). BC-1.02.002 / DI-013.
+#[test]
+fn test_BC_1_02_002_overflowing_timestamp_skipped_not_panic() {
+    let huge = "999999999999999999999999999999"; // secs * 1e9 overflows i128
+    let l = line(huge, "10.0.1.5", "1", "10.0.2.10", "502", "tcp", "SF");
+    let valid = line(
+        "1717200000.0",
+        "10.0.1.6",
+        "2",
+        "10.0.2.11",
+        "502",
+        "tcp",
+        "SF",
+    );
+    let d = drain_str(&log(&[&l, &valid]));
+    assert_eq!(d.flows.len(), 1, "overflow line must not produce a flow");
+    assert_eq!(d.skipped(), 1);
+    assert!(matches!(d.errs[0], FlowParseError::Malformed { .. }));
+    assert_eq!(d.flows[0].src_ip, ip("10.0.1.6"));
+}
+
+// WAVE2-002: a non-UTF-8 byte on one line must skip only that line and still
+// parse the rest — never silently truncate the remainder. BC-1.02.002 / EC-003.
+#[test]
+fn test_BC_1_02_002_non_utf8_line_skipped_rest_parsed() {
+    let mut bytes = HEADER.as_bytes().to_vec();
+    bytes.extend_from_slice(&[0xFF, 0xFE, b'\n']); // garbage, invalid UTF-8
+    bytes.extend_from_slice(
+        line(
+            "1717200000.0",
+            "10.0.1.5",
+            "1",
+            "10.0.2.10",
+            "502",
+            "tcp",
+            "SF",
+        )
+        .as_bytes(),
+    );
+    bytes.push(b'\n');
+    let d = drain(ZeekAdapter::from_reader(bytes.as_slice()));
+    assert_eq!(
+        d.flows.len(),
+        1,
+        "valid line after a bad byte must still parse"
+    );
+    assert_eq!(
+        d.skipped(),
+        1,
+        "bad-byte line is one skip, not a truncation"
+    );
+    assert_eq!(d.flows[0].src_ip, ip("10.0.1.5"));
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(256))]
+    // Panic-freedom over the real byte domain (VP-1.02.001-c is about arbitrary
+    // *bytes*): a valid header followed by arbitrary bytes must never panic.
+    #[test]
+    fn test_parser_panic_free_on_arbitrary_bytes(data in prop::collection::vec(any::<u8>(), 0..512)) {
+        let mut buf = HEADER.as_bytes().to_vec();
+        buf.extend_from_slice(&data);
+        let _ = drain(ZeekAdapter::from_reader(buf.as_slice()));
+    }
+}
