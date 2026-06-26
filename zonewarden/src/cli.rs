@@ -73,6 +73,25 @@ pub fn run(args: &CliArgs) -> Result<u8, ZonewardenError> {
     // Usage check BEFORE any file is opened (BC-1.06.006 / SS-03).
     let max_flows = validate_max_flows(args.max_flows)?;
 
+    // Refuse to write the report over an input file (DI-012 / NFR-006 — never
+    // mutate inputs). If --output resolves to an existing path equal to --policy
+    // or --flows, the end-of-run rename would silently destroy that input
+    // (P5-IO-006). canonicalize() succeeds only if the path already exists, so a
+    // brand-new --output (which cannot be an input) is unaffected.
+    if let Some(out) = &args.output {
+        if let Ok(out_c) = out.canonicalize() {
+            for input in [&args.policy, &args.flows] {
+                if input.canonicalize().ok().as_ref() == Some(&out_c) {
+                    return Err(ZonewardenError::Io(IoError::OutputWrite {
+                        path: out.display().to_string(),
+                        detail: "output path is also an input file; refusing to overwrite an input"
+                            .to_string(),
+                    }));
+                }
+            }
+        }
+    }
+
     // Load + validate policy (ST-1/ST-2).
     let parsed = policy::load(&args.policy)?;
     let validated = validator::validate(parsed)?;

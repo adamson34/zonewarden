@@ -16,13 +16,16 @@ fn temp_target(tag: &str) -> PathBuf {
     std::env::temp_dir().join(name)
 }
 
-/// The temp file emit_to_file would create alongside `target`.
-fn temp_sidecar(target: &std::path::Path) -> PathBuf {
-    let file_name = target.file_name().unwrap().to_string_lossy().into_owned();
-    target
-        .parent()
-        .unwrap()
-        .join(format!(".{file_name}.tmp.{}", std::process::id()))
+/// Whether any temp sidecar (`.{name}.tmp.*`) for `target` is left behind.
+fn temp_leftover_exists(target: &std::path::Path) -> bool {
+    let prefix = format!(".{}.tmp.", target.file_name().unwrap().to_string_lossy());
+    let dir = target.parent().unwrap();
+    std::fs::read_dir(dir)
+        .map(|rd| {
+            rd.flatten()
+                .any(|e| e.file_name().to_string_lossy().starts_with(&prefix))
+        })
+        .unwrap_or(false)
 }
 
 // ── AC-001: atomic write via temp-then-rename ────────────────────────────────
@@ -37,7 +40,7 @@ fn test_BC_1_06_008_atomic_write_uses_temp_then_rename() {
     assert_eq!(std::fs::read(&target).unwrap(), b"hello zonewarden");
     // the temp sidecar must be gone after the rename
     assert!(
-        !temp_sidecar(&target).exists(),
+        !temp_leftover_exists(&target),
         "temp file should be renamed away"
     );
 
@@ -62,7 +65,7 @@ fn test_BC_1_06_008_no_partial_file_on_write_error() {
         "target must not exist after a write error"
     );
     assert!(
-        !temp_sidecar(&target).exists(),
+        !temp_leftover_exists(&target),
         "temp file must be cleaned up"
     );
 }

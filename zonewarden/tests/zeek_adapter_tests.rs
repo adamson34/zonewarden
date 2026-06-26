@@ -83,6 +83,33 @@ fn fixture(name: &str) -> PathBuf {
         .join(name)
 }
 
+// ── P5-IO-001: over-length line is skipped (bounded memory), stream continues ─
+
+#[test]
+fn test_overlong_line_skipped_not_oom() {
+    // A pathological 2 MiB newline-free line exceeds the per-line cap (1 MiB);
+    // it must be skipped-and-counted (DI-013) without buffering unboundedly, and
+    // a following valid line must still parse.
+    let huge = "a".repeat(2 * 1024 * 1024);
+    let valid = line(
+        "1717200000.0",
+        "10.0.1.5",
+        "1234",
+        "10.0.2.10",
+        "502",
+        "tcp",
+        "SF",
+    );
+    let d = drain_str(&log(&[&huge, &valid]));
+    assert_eq!(
+        d.flows.len(),
+        1,
+        "the valid line after the huge one must parse"
+    );
+    assert_eq!(d.flows[0].dst_port, Some(502));
+    assert!(d.skipped() >= 1, "the over-length line must be skipped");
+}
+
 // ── AC-001: valid line → Flow with all fields ───────────────────────────────
 
 #[test]

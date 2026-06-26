@@ -14,7 +14,7 @@
 
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::net::IpAddr;
 use std::path::Path;
 
@@ -26,6 +26,11 @@ use zonewarden_core::RealitySource;
 /// Default ingest cap: the maximum number of successfully-normalized flows before
 /// the run aborts (BC-1.02.006). Far below `u64::MAX`; raise with `--max-flows`.
 pub const DEFAULT_MAX_FLOWS: u64 = 1_000_000;
+
+/// Maximum bytes buffered for a single flow line. A well-formed Zeek conn.log
+/// record is well under 1 KiB; this 1 MiB ceiling bounds per-line memory so a
+/// pathological newline-free input cannot OOM the process (FM-007 / P5-IO-001).
+const MAX_LINE_BYTES: usize = 1 << 20;
 
 /// Validate a `--max-flows` value: the cap must be at least 1 (BC-1.02.006 inv 2 /
 /// AC-007). Called at CLI arg-parse time (S-6.03) before any flows are read.
@@ -167,6 +172,24 @@ impl<R: BufRead> ZeekAdapter<R> {
             conn_state,
         })
     }
+
+    /// Discard the rest of an over-length physical line in bounded chunks so no
+    /// single allocation exceeds `MAX_LINE_BYTES` (P5-IO-001).
+    fn drain_overlong_line(&mut self) {
+        loop {
+            self.buf.clear();
+            match self
+                .reader
+                .by_ref()
+                .take(MAX_LINE_BYTES as u64)
+                .read_until(b'\n', &mut self.buf)
+            {
+                Ok(0) | Err(_) => return,                           // EOF / I/O error
+                Ok(_) if self.buf.last() == Some(&b'\n') => return, // line consumed
+                Ok(_) => {}                                         // keep draining
+            }
+        }
+    }
 }
 
 /// Infer the application-layer service from `(proto, dst_port)` against the
@@ -213,12 +236,31 @@ impl<R: BufRead> Iterator for ZeekAdapter<R> {
             // the stream: it is lossily decoded and that single line is skipped as
             // malformed, while the rest of the file still parses (BC-1.02.002 /
             // DI-013). A genuine I/O error ends the stream.
-            let read = self.reader.read_until(b'\n', &mut self.buf);
+            //
+            // The read is bounded to MAX_LINE_BYTES so a pathological newline-free
+            // line cannot be buffered whole and OOM the process before the ingest
+            // cap is reached (FM-007 / P5-IO-001).
+            let read = self
+                .reader
+                .by_ref()
+                .take(MAX_LINE_BYTES as u64 + 1)
+                .read_until(b'\n', &mut self.buf);
             match read {
                 Ok(0) | Err(_) => return None,
                 Ok(_) => {}
             }
             self.line_no += 1;
+
+            // Over-length line: we hit the byte cap without seeing a newline.
+            // Drain the rest of the physical line (bounded chunks, constant
+            // memory) and skip it as malformed rather than buffering it whole.
+            if self.buf.len() > MAX_LINE_BYTES && self.buf.last() != Some(&b'\n') {
+                self.drain_overlong_line();
+                return Some(Err(IngestError::Parse(malformed(
+                    self.line_no,
+                    "line exceeds maximum length",
+                ))));
+            }
 
             // Lossy UTF-8 decode, then strip the line terminator, tolerating
             // Windows CRLF (EC-007/AC-008).

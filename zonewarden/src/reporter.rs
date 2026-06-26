@@ -23,6 +23,9 @@ use zonewarden_core::types::{
 
 const SCHEMA_VERSION: &str = "1.0";
 
+/// Process-lifetime counter for unique temp-file names in `emit_to_file`.
+static TEMP_NONCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
 // ── JSON (BC-1.06.002, schema in interface-definitions.md) ───────────────────
 
 #[derive(Serialize)]
@@ -339,18 +342,49 @@ where
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_else(|| "output".to_string());
-    // Same directory as the target → same filesystem → rename is atomic.
-    let temp = parent.join(format!(".{file_name}.tmp.{}", std::process::id()));
 
     let out_write = |detail: String| IoError::OutputWrite {
         path: path.display().to_string(),
         detail,
     };
 
-    let mut file = File::create(&temp).map_err(|e| IoError::TempCreate {
-        path: temp.display().to_string(),
-        detail: e.to_string(),
-    })?;
+    // Create the temp file in the same directory (same filesystem → atomic
+    // rename) with O_EXCL (`create_new`): it never follows or truncates an
+    // existing file/symlink, defeating a pre-planted symlink at a predictable
+    // path. A per-call nonce avoids same-PID collisions across namespaces; on
+    // the rare clash we retry with the next nonce (P5-IO-005).
+    let pid = std::process::id();
+    let (temp, mut file) = {
+        let mut chosen: Option<(std::path::PathBuf, File)> = None;
+        for _ in 0..32 {
+            let nonce = TEMP_NONCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            let candidate = parent.join(format!(".{file_name}.tmp.{pid}.{nonce}"));
+            match std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&candidate)
+            {
+                Ok(f) => {
+                    chosen = Some((candidate, f));
+                    break;
+                }
+                Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+                Err(e) => {
+                    return Err(IoError::TempCreate {
+                        path: candidate.display().to_string(),
+                        detail: e.to_string(),
+                    })
+                }
+            }
+        }
+        chosen.ok_or_else(|| IoError::TempCreate {
+            path: parent
+                .join(format!(".{file_name}.tmp.{pid}.*"))
+                .display()
+                .to_string(),
+            detail: "could not create a unique temporary file".to_string(),
+        })?
+    };
 
     if let Err(e) = write_fn(&mut file).and_then(|()| file.flush()) {
         let _ = fs::remove_file(&temp);

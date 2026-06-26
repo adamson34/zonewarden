@@ -220,6 +220,29 @@ fn test_output_to_file() {
     let _ = std::fs::remove_file(&target);
 }
 
+// ── P5-IO-006: --output equal to an input file is refused (exit 2) ───────────
+
+#[test]
+fn test_output_equal_to_input_refused() {
+    let flows = fixture("conformant.log").display().to_string();
+    let (code, _out, err) = run(&[
+        "--policy",
+        &policy(),
+        "--flows",
+        &flows,
+        "--output",
+        &flows, // output == input → must refuse, never overwrite the input
+    ]);
+    assert_eq!(code, 2, "must exit 2");
+    assert!(err.contains("input"), "stderr should explain: {err}");
+    // the input file must be untouched (still a valid Zeek log)
+    let after = std::fs::read_to_string(&flows).unwrap();
+    assert!(
+        after.starts_with("#fields"),
+        "input must not be overwritten"
+    );
+}
+
 // ── AC-007: binary crate has no network access (source-level) ────────────────
 
 #[test]
