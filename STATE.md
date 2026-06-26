@@ -11,7 +11,7 @@ input-hash: "[live-state]"
 traces_to: ""
 project: "zonewarden"
 mode: "greenfield"
-current_step: "phase-3 TDD — Waves 1-2 complete + Wave 2 gate PASSED; Wave 3 ready (S-1.03, S-2.02)"
+current_step: "phase-3 TDD — Wave 3 in progress (S-1.03 done); S-2.02 + S-5.01 ready"
 current_cycle: "zonewarden-greenfield"
 dtu_required: false
 ---
@@ -36,7 +36,7 @@ dtu_required: false
 | **Started** | 2026-06-17 |
 | **Last Updated** | 2026-06-26 |
 | **Current Phase** | 3 |
-| **Current Step** | Phase 3 TDD — Waves 1-2 complete (4/17); Wave 2 gate PASSED; Wave 3 ready (S-1.03, S-2.02) |
+| **Current Step** | Phase 3 TDD — Wave 3 in progress (5/17): S-1.03 done; S-2.02 + S-5.01 ready |
 
 ## Phase Progress
 
@@ -45,7 +45,7 @@ dtu_required: false
 | 0: Codebase Ingestion | n/a (greenfield) | | | | |
 | 1: Spec Crystallization | COMPLETE | 2026-06-17 | 2026-06-17 | passed | 8 adversarial passes: 14→16→11→15→9→5→9→15; ~93 findings fixed; 0 CRIT ×6, all HIGH-to-date fixed. L2 FROZEN at v1.8 (D-009). Loop not converging to 0-HIGH (novelty 1.0) — accepted sound + proceeded to PRD. Pass-8 MED/LOW = backlog. |
 | 2: Story Decomposition | COMPLETE | 2026-06-17 | 2026-06-17 | passed | 6 epics, 17 stories, 5 waves, 10 holdout scenarios, 44/44 BC coverage, acyclic |
-| 3: TDD Implementation | in-progress | 2026-06-17 | | | Waves 1-2 COMPLETE + Wave 2 GATE PASSED: S-1.01, S-1.02, S-4.01, S-2.01 DONE. 4/17 stories; 48 tests green (release) incl proptests; clippy -D warnings + fmt clean. Wave 2 gate (2026-06-26): Gate 1 pass; Gate 3 adversarial found 2 HIGH (parse_ts overflow, non-UTF-8 truncation) — both FIXED+regression-tested (de2b4c9); demo/holdout gates deferred to Wave 5 (no CLI yet). Wave 3 unlocked (S-1.03, S-2.02 ready). |
+| 3: TDD Implementation | in-progress | 2026-06-17 | | | Waves 1-2 COMPLETE + GATE PASSED; Wave 3 in progress (1/3): S-1.01, S-1.02, S-4.01, S-2.01, S-1.03 DONE. 5/17 stories; 66 tests green (release) incl proptests; clippy -D + fmt clean. S-1.03 = validator (E-POL-005..008, ipnet prefix index, 9d8575d). Wave 3 remaining: S-2.02, S-5.01 (both ready). |
 | 4: Holdout Evaluation | not-started | | | | |
 | 5: Adversarial Refinement | not-started | | | | |
 | 6: Formal Hardening | not-started | | | | |
@@ -84,7 +84,8 @@ dtu_required: false
 | TDD: S-4.01 severity grading | (inline TDD) | completed | zonewarden-core::severity (DI-017 single source; OQ-001 13-state); 5 tests; commit 4e95c29 |
 | TDD: S-2.01 Zeek parser | (inline TDD) | completed | zonewarden::adapters::zeek + RealitySource + FlowParseError; 19 tests + proptests; commit f9a7ee4 |
 | Wave 2 integration gate | wave-gate | completed | PASSED 2026-06-26; 2 HIGH fixed (de2b4c9); report: cycles/zonewarden-greenfield/adversarial-reviews/wave-2-gate.md |
-| TDD: Wave 3 | — | next | S-1.03 policy validation, S-2.02 service/cap (parallel; both unblocked) |
+| TDD: S-1.03 policy validation | (inline TDD) | completed | zonewarden-core::validator (E-POL-005..008, ipnet prefix index); 17 tests; commit 9d8575d |
+| TDD: Wave 3 remaining | — | next | S-2.02 service/cap, S-5.01 policy digest (both ready) |
 
 ## Decisions Log
 
@@ -118,7 +119,7 @@ dtu_required: false
 | Field | Value |
 |-------|-------|
 | **Date** | 2026-06-26 |
-| **Position** | Phase 3 (TDD). Waves 1-2 COMPLETE on dev (4/17): S-1.01 workspace+PortSet; S-1.02 policy YAML load; S-4.01 severity (DI-017 single source, commit 4e95c29); S-2.01 Zeek conn.log parser — zonewarden::adapters::zeek + RealitySource trait + FlowParseError, conn_state reuses severity (commit f9a7ee4). ~60 tests green incl proptests, clippy -D warnings clean, fmt clean. Repo: 3-branch model (main/dev/factory-artifacts worktree); code on dev. Wave 2 GATE PASSED 2026-06-26 (report: cycles/zonewarden-greenfield/adversarial-reviews/wave-2-gate.md): Gate-3 adversary found + fixed 2 HIGH (parse_ts i128 overflow; non-UTF-8 read truncation), commit de2b4c9. NEXT: Wave 3 — S-1.03 policy validation + S-2.02 service/cap (parallel, both ready). Deferred/backlog: service_source inference -> S-2.02; cargo-fuzz target + WAVE2-006 (brittle YAML err classification) -> Phase 6; WAVE2-005 (sl_t empty-mapping completeness) -> S-1.03; demo+holdout gates -> Wave 5 (need CLI). |
+| **Position** | Phase 3 (TDD). Waves 1-2 COMPLETE on dev (4/17): S-1.01 workspace+PortSet; S-1.02 policy YAML load; S-4.01 severity (DI-017 single source, commit 4e95c29); S-2.01 Zeek conn.log parser — zonewarden::adapters::zeek + RealitySource trait + FlowParseError, conn_state reuses severity (commit f9a7ee4). ~60 tests green incl proptests, clippy -D warnings clean, fmt clean. Repo: 3-branch model (main/dev/factory-artifacts worktree); code on dev. Wave 2 GATE PASSED 2026-06-26 (de2b4c9 fixed 2 HIGH). Wave 3 in progress: S-1.03 validator DONE (9d8575d; E-POL-005..008, ipnet prefix index sorted desc; zero-member+short-prefix warnings). NEXT: S-2.02 service inference + ingest cap, S-5.01 policy digest (both ready). Deferred/backlog: service_source inference -> S-2.02; cargo-fuzz target + WAVE2-006 (brittle YAML err classification) -> Phase 6; WAVE2-005 (sl_t empty-mapping `{}` -> SlTarget{None,None}) is a LOAD-layer fix in policy.rs SlTargetYaml::into_core (NOT closed by S-1.03 validator) — small follow-up, still OPEN; demo+holdout gates -> Wave 5 (need CLI). |
 | **Convergence counter** | spec loop closed by D-009 (not via D-008 streak) |
 
 ## Historical Content

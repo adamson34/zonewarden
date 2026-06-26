@@ -46,12 +46,14 @@ stories:
     notes: "severity::grade + conn_state_from_token (DI-017 single source; OQ-001 13-state table); 5 integration tests; Red Gate verified. Inline TDD on dev."
 
   S-1.03:
-    status: ready
+    status: done
     wave: 3
     points: 8
     blocked_by: [S-1.02]
-    branch: null
+    branch: dev
     worktree: null
+    commit: 9d8575d
+    notes: "validator::validate -> ValidatedPolicy{policy,prefix_index,warnings}; E-POL-005/006/007/008; ipnet IpNet prefix index (desc by len); zero-member + short-prefix warnings. 17 tests. AC-005 (token legality) enforced at load layer (policy_load_tests). Inline TDD on dev."
 
   S-2.02:
     status: ready
@@ -62,7 +64,7 @@ stories:
     worktree: null
 
   S-5.01:
-    status: blocked
+    status: ready
     wave: 3
     points: 5
     blocked_by: [S-1.03]
