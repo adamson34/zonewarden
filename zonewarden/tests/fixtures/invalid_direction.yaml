@@ -1,0 +1,18 @@
+# invalid direction token (BC-1.01.007) — must be rejected E-POL-003
+zones:
+  - id: plc
+    name: PLC Cell
+    purdue_level: L1
+    members:
+      - "10.0.1.0/24"
+  - id: hist
+    name: Historian
+    purdue_level: L3
+    members:
+      - "10.0.3.5/32"
+conduits:
+  - from_zone: plc
+    to_zone: hist
+    direction: both        # unrecognized — not forward/bidirectional/unidirectional
+    proto: tcp
+    ports: any

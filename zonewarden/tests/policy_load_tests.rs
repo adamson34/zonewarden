@@ -127,3 +127,29 @@ fn test_bc_1_01_001_parse_is_deterministic() {
     let b = load(&fixture("minimal.yaml")).unwrap();
     assert_eq!(a, b);
 }
+
+// S-1.03 AC-005 / BC-1.01.007: unrecognized direction/proto tokens are rejected
+// at the load boundary with E-POL-003 (no permissive default). A typed `Policy`
+// cannot represent an invalid token, so this contract is enforced here rather
+// than in the (pure, typed) validator.
+#[test]
+#[allow(non_snake_case)]
+fn test_BC_1_01_007_invalid_token_rejected() {
+    let dir_err = load(&fixture("invalid_direction.yaml")).unwrap_err();
+    assert!(
+        matches!(
+            dir_err,
+            ZonewardenError::Policy(PolicyError::InvalidToken { ref field, .. }) if field == "direction"
+        ),
+        "expected E-POL-003 on direction, got {dir_err:?}"
+    );
+
+    let proto_err = load(&fixture("invalid_proto.yaml")).unwrap_err();
+    assert!(
+        matches!(
+            proto_err,
+            ZonewardenError::Policy(PolicyError::InvalidToken { ref field, .. }) if field == "proto"
+        ),
+        "expected E-POL-003 on proto, got {proto_err:?}"
+    );
+}
