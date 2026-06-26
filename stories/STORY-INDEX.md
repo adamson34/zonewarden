@@ -24,10 +24,10 @@ traces_to: specs/prd.md
 | S-1.03 | Policy semantic validation | E-1 | 3 | done | 8 | S-1.02 | BC-1.01.004, BC-1.01.005, BC-1.01.006, BC-1.01.007, BC-1.01.008 |
 | S-2.01 | Zeek conn.log parser + normalization | E-2 | 2 | done | 8 | S-1.01 | BC-1.02.001, BC-1.02.002, BC-1.02.003, BC-1.02.005 |
 | S-2.02 | Service inference + ingest cap | E-2 | 3 | done | 5 | S-2.01 | BC-1.02.004, BC-1.02.006 |
-| S-3.01 | Zone resolver + longest-prefix match | E-3 | 4 | ready | 8 | S-1.03 | BC-1.03.001, BC-1.03.002, BC-1.03.005 |
-| S-3.02 | Multicast + directed-broadcast detection | E-3 | 4 | blocked | 5 | S-3.01 | BC-1.03.003, BC-1.03.004 |
+| S-3.01 | Zone resolver + longest-prefix match | E-3 | 4 | done | 8 | S-1.03 | BC-1.03.001, BC-1.03.002, BC-1.03.005 |
+| S-3.02 | Multicast + directed-broadcast detection | E-3 | 4 | ready | 5 | S-3.01 | BC-1.03.003, BC-1.03.004 |
 | S-4.01 | Severity grading (conn_state → bucket) | E-4 | 2 | done | 3 | S-1.01 | BC-1.04.009 |
-| S-4.02 | IDMZ no-bypass truth table | E-4 | 4 | blocked | 5 | S-3.01 | BC-1.04.007, BC-1.04.008 |
+| S-4.02 | IDMZ no-bypass truth table | E-4 | 4 | ready | 5 | S-3.01 | BC-1.04.007, BC-1.04.008 |
 | S-4.03 | Classifier — IntraZone, any-match, directionality | E-4 | 4 | blocked | 8 | S-3.02, S-4.02, S-4.01 | BC-1.04.001–006, BC-1.04.009 |
 | S-4.04 | Classifier — MulticastExempt + verdict totality | E-4 | 4 | blocked | 5 | S-4.03 | BC-1.04.010, BC-1.04.011 |
 | S-5.01 | Policy digest — canonical JSON + SHA-256 | E-5 | 3 | done | 5 | S-1.03 | BC-1.05.003 |

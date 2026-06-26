@@ -76,15 +76,17 @@ stories:
     notes: "digest::compute(&Policy) -> canonical JSON (serde_json Value, sorted/deduped/None-omitted) + SHA-256 lowercase hex; serde_json+sha2 added to core per ADR-004. 9 tests incl order/dupe-invariance proptest. Inline TDD on dev."
 
   S-3.01:
-    status: ready
+    status: done
     wave: 4
     points: 8
     blocked_by: [S-1.03]
-    branch: null
+    branch: dev
     worktree: null
+    commit: 351a2e7
+    notes: "resolver::resolve longest-prefix + EXTERNAL fallback; resolve_pair + ResolvedPair (same_zone/both_external); Kani VP-1.03.001-a totality VERIFIED. Also fixed WAVE3-002 (IPv4-mapped member canonicalization, BC-1.01.005 EC-005). 11 tests. Inline TDD on dev."
 
   S-3.02:
-    status: blocked
+    status: ready
     wave: 4
     points: 5
     blocked_by: [S-3.01]
@@ -92,7 +94,7 @@ stories:
     worktree: null
 
   S-4.02:
-    status: blocked
+    status: ready
     wave: 4
     points: 5
     blocked_by: [S-3.01]
