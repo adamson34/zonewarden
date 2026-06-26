@@ -34,7 +34,10 @@ fn read_policy_file(path: &Path) -> Result<String, IoError> {
         match e.kind() {
             std::io::ErrorKind::NotFound => IoError::NotFound { path: p },
             std::io::ErrorKind::PermissionDenied => IoError::PermissionDenied { path: p },
-            _ => IoError::Read { path: p, detail: e.to_string() },
+            _ => IoError::Read {
+                path: p,
+                detail: e.to_string(),
+            },
         }
     })
 }
@@ -51,7 +54,10 @@ fn classify_yaml_error(e: serde_norway::Error) -> ZonewardenError {
             location: String::new(),
         } // E-POL-002
     } else {
-        PolicyError::InvalidToken { field: "policy".to_string(), value: msg } // E-POL-003
+        PolicyError::InvalidToken {
+            field: "policy".to_string(),
+            value: msg,
+        } // E-POL-003
     };
     err.into()
 }
@@ -259,7 +265,9 @@ fn parse_matcher(s: &str) -> Result<AssetMatcher, PolicyError> {
                 prefix_len,
             })
         }
-        None => Ok(AssetMatcher::Ip(s.parse().map_err(|_| invalid("members", s))?)),
+        None => Ok(AssetMatcher::Ip(
+            s.parse().map_err(|_| invalid("members", s))?,
+        )),
     }
 }
 

@@ -86,7 +86,10 @@ fn test_bc_1_01_002_empty_file_returns_pol_001() {
 fn test_bc_1_01_002_missing_field_returns_pol_002() {
     let err = load(&fixture("missing_field.yaml")).unwrap_err();
     assert!(
-        matches!(err, ZonewardenError::Policy(PolicyError::MissingField { .. })),
+        matches!(
+            err,
+            ZonewardenError::Policy(PolicyError::MissingField { .. })
+        ),
         "expected E-POL-002 MissingField, got {err:?}"
     );
 }
@@ -96,7 +99,10 @@ fn test_bc_1_01_002_missing_field_returns_pol_002() {
 fn test_bc_1_01_003_duplicate_key_rejected() {
     let err = load(&fixture("dup_key.yaml")).unwrap_err();
     assert!(
-        matches!(err, ZonewardenError::Policy(PolicyError::DuplicateKey { .. })),
+        matches!(
+            err,
+            ZonewardenError::Policy(PolicyError::DuplicateKey { .. })
+        ),
         "expected E-POL-004 DuplicateKey, got {err:?}"
     );
 }
@@ -106,7 +112,10 @@ fn test_bc_1_01_003_duplicate_key_rejected() {
 fn test_ec_008_file_not_found_returns_io_001() {
     let err = load(&fixture("does_not_exist.yaml")).unwrap_err();
     assert!(
-        matches!(err, ZonewardenError::Io(zonewarden_core::errors::IoError::NotFound { .. })),
+        matches!(
+            err,
+            ZonewardenError::Io(zonewarden_core::errors::IoError::NotFound { .. })
+        ),
         "expected E-IO-001 NotFound, got {err:?}"
     );
 }
