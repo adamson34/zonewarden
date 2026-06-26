@@ -1,4 +1,4 @@
-current_wave: 1
+current_wave: 2
 total_waves: 5
 total_stories: 17
 total_points: 102
@@ -26,7 +26,7 @@ stories:
     notes: "policy::load (serde_norway DTO->core); 10 integration tests green; E-POL-001..004 + E-IO-001 wired; serde isolated in shell."
 
   S-2.01:
-    status: blocked
+    status: ready
     wave: 2
     points: 8
     blocked_by: [S-1.01]
@@ -34,7 +34,7 @@ stories:
     worktree: null
 
   S-4.01:
-    status: blocked
+    status: ready
     wave: 2
     points: 3
     blocked_by: [S-1.01]

@@ -4,14 +4,14 @@ level: ops
 version: "2.0"
 status: in-progress
 producer: state-manager
-timestamp: 2026-06-17T00:00:00
+timestamp: 2026-06-26T00:00:00
 phase: 3
 inputs: []
 input-hash: "[live-state]"
 traces_to: ""
 project: "zonewarden"
 mode: "greenfield"
-current_step: "phase-1 spec crystallization (brief complete)"
+current_step: "phase-3 TDD — Wave 2 (S-2.01 + S-4.01 ready)"
 current_cycle: "zonewarden-greenfield"
 dtu_required: false
 ---
@@ -29,14 +29,14 @@ dtu_required: false
 | Field | Value |
 |-------|-------|
 | **Product** | zonewarden — OT Segmentation-as-Code validator |
-| **Repository** | /Users/lukeadamson/1898/devtraining |
+| **Repository** | /Users/lukeadamson/1898/otposture/zonewarden |
 | **Mode** | greenfield |
 | **Language** | Rust |
-| **Target Workspace** | /Users/lukeadamson/1898/devtraining |
+| **Target Workspace** | /Users/lukeadamson/1898/otposture/zonewarden |
 | **Started** | 2026-06-17 |
-| **Last Updated** | 2026-06-17 |
-| **Current Phase** | 1 |
-| **Current Step** | Brief complete; next PRD / domain spec |
+| **Last Updated** | 2026-06-26 |
+| **Current Phase** | 3 |
+| **Current Step** | Phase 3 TDD — Wave 2: S-1.02 done; S-2.01 + S-4.01 ready |
 
 ## Phase Progress
 
