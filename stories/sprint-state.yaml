@@ -3,6 +3,8 @@ total_waves: 5
 total_stories: 17
 total_points: 102
 bc_coverage: "44/44"
+wave_gates: { wave-1: passed, wave-2: passed, wave-3: passed, wave-4: passed, wave-5: passed }
+phase_3_status: complete
 
 stories:
   S-1.01:
