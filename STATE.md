@@ -116,7 +116,7 @@ dtu_required: false
 | Field | Value |
 |-------|-------|
 | **Date** | 2026-06-26 |
-| **Position** | Phase 3 (TDD). S-1.01 + S-1.02 + S-4.01 DONE on dev (workspace+PortSet; policy YAML load via serde_norway DTO->core; severity grading — zonewarden-core::severity, DI-017 single source + OQ-001 13-state table, commit 4e95c29). ~41 tests green, clippy -D warnings clean. Repo: 3-branch model (main/dev/factory-artifacts worktree); code on dev. NEXT (last Wave 2 story): S-2.01 Zeek conn.log parser. KNOWN ISSUE: pre-existing `cargo fmt --check` drift (6 hunks) in S-1.02 files (policy.rs, policy_load_tests.rs) — quality gate not enforced on that commit; fix before wave-gate. |
+| **Position** | Phase 3 (TDD). S-1.01 + S-1.02 + S-4.01 DONE on dev (workspace+PortSet; policy YAML load via serde_norway DTO->core; severity grading — zonewarden-core::severity, DI-017 single source + OQ-001 13-state table, commit 4e95c29). ~41 tests green, clippy -D warnings clean. Repo: 3-branch model (main/dev/factory-artifacts worktree); code on dev. NEXT (last Wave 2 story): S-2.01 Zeek conn.log parser. Repo is fully `cargo fmt --check` clean (pre-existing S-1.02 drift fixed in 4a64cf2). |
 | **Convergence counter** | spec loop closed by D-009 (not via D-008 streak) |
 
 ## Historical Content
