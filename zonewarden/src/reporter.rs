@@ -9,10 +9,13 @@
 //! edges are sorted here).
 
 use std::collections::BTreeSet;
+use std::fs::{self, File};
 use std::io::{self, Write};
+use std::path::Path;
 
 use serde::Serialize;
 
+use zonewarden_core::errors::IoError;
 use zonewarden_core::types::{
     ConformanceResult, ConnState, Proto, PurdueLevel, Service, ServiceSource, Severity,
     ValidatedPolicy, Violation, ViolationKind,
@@ -279,4 +282,58 @@ fn purdue_str(l: PurdueLevel) -> &'static str {
         PurdueLevel::L4 => "L4",
         PurdueLevel::L5 => "L5",
     }
+}
+
+// ── atomic file write + warnings (S-6.02) ────────────────────────────────────
+
+/// Write output atomically (FM-006 / BC-1.06.008): the `write_fn` writes into a
+/// temporary file in the same directory as `path`, which is then atomically
+/// renamed onto `path`. On any failure the temp file is removed and the target
+/// is left untouched (never partially written).
+pub fn emit_to_file<F>(path: &Path, write_fn: F) -> Result<(), IoError>
+where
+    F: FnOnce(&mut dyn Write) -> io::Result<()>,
+{
+    let parent = path
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    let file_name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "output".to_string());
+    // Same directory as the target → same filesystem → rename is atomic.
+    let temp = parent.join(format!(".{file_name}.tmp.{}", std::process::id()));
+
+    let out_write = |detail: String| IoError::OutputWrite {
+        path: path.display().to_string(),
+        detail,
+    };
+
+    let mut file = File::create(&temp).map_err(|e| IoError::TempCreate {
+        path: temp.display().to_string(),
+        detail: e.to_string(),
+    })?;
+
+    if let Err(e) = write_fn(&mut file).and_then(|()| file.flush()) {
+        let _ = fs::remove_file(&temp);
+        return Err(out_write(e.to_string()));
+    }
+    drop(file); // close before rename
+
+    if let Err(e) = fs::rename(&temp, path) {
+        let _ = fs::remove_file(&temp);
+        return Err(out_write(e.to_string()));
+    }
+    Ok(())
+}
+
+/// Emit run warnings to a writer (the CLI passes stderr), one `WARNING:`-prefixed
+/// line each, in the deterministic order supplied (BC-1.06.005). Never affects
+/// the exit code.
+pub fn emit_warnings(warnings: &[String], out: &mut dyn Write) -> io::Result<()> {
+    for w in warnings {
+        writeln!(out, "WARNING: {w}")?;
+    }
+    Ok(())
 }
