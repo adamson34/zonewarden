@@ -33,8 +33,8 @@ traces_to: specs/prd.md
 | S-5.01 | Policy digest — canonical JSON + SHA-256 | E-5 | 3 | done | 5 | S-1.03 | BC-1.05.003 |
 | S-5.02 | Aggregator — ConformanceResult + DI-015 + overflow | E-5 | 5 | done | 8 | S-4.04, S-5.01 | BC-1.05.001, BC-1.05.004, BC-1.05.005 |
 | S-5.03 | Aggregator — deterministic sort + empty-input | E-5 | 5 | done | 5 | S-5.02 | BC-1.05.002 |
-| S-6.01 | Reporter — JSON + text + Mermaid formatters | E-6 | 5 | ready | 8 | S-5.03 | BC-1.06.002, BC-1.06.003, BC-1.06.004 |
-| S-6.02 | Reporter — atomic write + deterministic warnings | E-6 | 5 | blocked | 3 | S-6.01 | BC-1.06.005, BC-1.06.007, BC-1.06.008 |
+| S-6.01 | Reporter — JSON + text + Mermaid formatters | E-6 | 5 | done | 8 | S-5.03 | BC-1.06.002, BC-1.06.003, BC-1.06.004 |
+| S-6.02 | Reporter — atomic write + deterministic warnings | E-6 | 5 | ready | 3 | S-6.01 | BC-1.06.005, BC-1.06.007, BC-1.06.008 |
 | S-6.03 | CLI — argument parsing, exit codes, integration | E-6 | 5 | blocked | 8 | S-6.02, S-2.02 | BC-1.06.001, BC-1.06.006, BC-1.06.007 |
 
 ## By Wave
