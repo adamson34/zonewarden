@@ -192,12 +192,22 @@ fn test_BC_1_06_002_service_omitted_when_none() {
 #[test]
 fn test_BC_1_06_003_text_report_includes_summary_and_violations() {
     let p = vp();
-    let t = text_of(&result(&p));
+    let r = result(&p);
+    let t = text_of(&r);
+    // Summary block with all required stats + policy_digest (BC-1.06.003 PC3).
     assert!(t.contains("Summary"), "text: {t}");
-    assert!(t.contains('3'), "summary should mention flow count");
-    assert!(t.contains("plc") && t.contains("hist"), "violation zones");
+    assert!(t.contains("total_flows: 3"));
+    assert!(t.contains("intra_zone: 1"));
+    assert!(t.contains("allowed: 1"));
+    assert!(t.contains("distinct_violating_flows: 1"));
+    assert!(t.contains(&format!("policy_digest: {}", r.policy_digest)));
+    // Violation line carries zones, kind, severity, endpoints, explanation (PC2).
+    assert!(t.contains("plc") && t.contains("hist"));
     assert!(t.contains("NoMatchingConduit"));
     assert!(t.contains("Established"));
+    assert!(t.contains("10.0.1.5"), "src_ip must appear: {t}");
+    assert!(t.contains("10.0.3.9"), "dst_ip must appear");
+    assert!(t.contains("no conduit permits"), "explanation must appear");
 }
 
 #[test]
@@ -230,27 +240,24 @@ fn test_BC_1_06_004_mermaid_has_zone_nodes_and_conduit_edges() {
     let p = vp();
     let m = mermaid_of(&result(&p), &p);
     assert!(m.starts_with("graph LR"), "mermaid: {m}");
-    // zone nodes labeled with id + purdue level
-    assert!(m.contains("hist[") && m.contains("plc["));
-    assert!(m.contains("(L1)") && m.contains("(L3)"));
-    // conduit edge plc -> hist
-    assert!(m.contains("plc --> hist"));
+    // zone nodes labeled with id + purdue level (id lives in the quoted label)
+    assert!(m.contains("\"hist (L3)\"") && m.contains("\"plc (L1)\""));
+    // one edge per conduit (the fixture policy has 1)
+    assert_eq!(m.matches("-->").count(), 1, "one conduit edge");
     assert!(m.contains("classDef violation"));
 }
 
 #[test]
 fn test_BC_1_06_004_violated_zones_highlighted() {
-    // AC-007: zones in a violation get the :::violation class.
+    // AC-007: zones in a violation get the :::violation class on their node line.
     let p = vp();
     let m = mermaid_of(&result(&p), &p);
-    assert!(m.contains("plc:::violation") || m.contains("plc[") && m.contains(":::violation"));
-    // a violated zone line carries the class
     assert!(m
         .lines()
-        .any(|l| l.contains("plc") && l.contains(":::violation")));
+        .any(|l| l.contains("\"plc (L1)\"") && l.contains(":::violation")));
     assert!(m
         .lines()
-        .any(|l| l.contains("hist") && l.contains(":::violation")));
+        .any(|l| l.contains("\"hist (L3)\"") && l.contains(":::violation")));
 }
 
 #[test]
@@ -260,11 +267,28 @@ fn test_BC_1_06_004_mermaid_nodes_sorted_deterministic() {
     let m2 = mermaid_of(&result(&p), &p);
     assert_eq!(m1, m2, "mermaid must be deterministic");
     // nodes sorted by id: hist before plc
-    let hist = m1.find("hist[").unwrap();
-    let plc = m1.find("plc[").unwrap();
+    let hist = m1.find("\"hist (L3)\"").unwrap();
+    let plc = m1.find("\"plc (L1)\"").unwrap();
+    assert!(hist < plc, "zone nodes sorted by id (hist before plc)");
+}
+
+#[test]
+fn test_BC_1_06_004_zone_id_with_space_is_valid_mermaid() {
+    // WAVE5-001: a zone id with a space must not become a raw node identifier;
+    // it is aliased (z0), and the raw id appears only in the quoted label.
+    let pol = validate(zonewarden_core::types::Policy {
+        zones: vec![zone("dmz host", PurdueLevel::Idmz, "10.0.9.0/24")],
+        conduits: vec![],
+    })
+    .expect("valid policy");
+    let m = mermaid_of(&ConformanceResult::default(), &pol);
     assert!(
-        hist < plc,
-        "zone nodes must be sorted by id (hist before plc)"
+        !m.contains("dmz host["),
+        "spaced id must not be a raw node identifier: {m}"
+    );
+    assert!(
+        m.contains("\"dmz host (IDMZ)\""),
+        "raw id must appear in the quoted label: {m}"
     );
 }
 

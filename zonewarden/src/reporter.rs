@@ -110,63 +110,72 @@ pub fn emit_json(result: &ConformanceResult, out: &mut dyn Write) -> io::Result<
 
 // ── Text (BC-1.06.003) ───────────────────────────────────────────────────────
 
-/// Emit the human-readable text report, flagging heuristic service provenance
-/// (DI-008).
+/// Emit the human-readable text report (BC-1.06.003): a full summary block
+/// (all tallies + policy_digest) and a per-violation line carrying the
+/// endpoints, service (heuristic-flagged — DI-008), and explanation. Warnings
+/// are NOT written here — they go to stderr via the CLI (BC-1.06.005 inv 1).
 pub fn emit_text(result: &ConformanceResult, out: &mut dyn Write) -> io::Result<()> {
-    let nmc = count_kind(result, ViolationKind::NoMatchingConduit);
-    let wd = count_kind(result, ViolationKind::WrongDirection);
-    let idmz = count_kind(result, ViolationKind::IdmzBypass);
+    writeln!(out, "Summary:")?;
+    writeln!(out, "  policy_digest: {}", result.policy_digest)?;
+    writeln!(out, "  total_flows: {}", result.total_flows)?;
+    writeln!(out, "  intra_zone: {}", result.intra_zone)?;
+    writeln!(out, "  allowed: {}", result.allowed)?;
+    writeln!(out, "  no_matching_conduit: {}", result.no_matching_conduit)?;
+    writeln!(out, "  wrong_direction: {}", result.wrong_direction)?;
+    writeln!(out, "  multicast_exempt: {}", result.multicast_exempt)?;
+    writeln!(out, "  idmz_bypasses: {}", result.idmz_bypasses)?;
     writeln!(
         out,
-        "Summary: {} flows, {} violations ({nmc} NoMatchingConduit, {wd} WrongDirection, {idmz} IdmzBypass)",
-        result.total_flows,
-        result.violations.len()
+        "  distinct_violating_flows: {}",
+        result.distinct_violating_flows
     )?;
+    writeln!(out, "  external_endpoints: {}", result.external_endpoints)?;
+    writeln!(out, "  skipped: {}", result.skipped)?;
 
     if result.violations.is_empty() {
-        writeln!(out, "No violations")?;
-    } else {
-        for v in &result.violations {
-            let provenance = match v.service_source {
-                ServiceSource::PortHeuristic => " [heuristic]",
-                ServiceSource::DpiConfirmed => " [confirmed]",
-                ServiceSource::Unknown => "",
-            };
-            let port = v.dst_port.map(|p| format!(":{p}")).unwrap_or_default();
-            writeln!(
-                out,
-                "VIOLATION [{}] flow_index={} {}->{} [{}] {}{port}{provenance}",
-                severity_str(v.severity),
-                v.flow_index,
-                v.src_zone.0,
-                v.dst_zone.0,
-                violation_kind_str(&v.kind),
-                proto_str(&v.proto),
-            )?;
-        }
+        writeln!(out, "No violations found")?;
+        return Ok(());
     }
 
-    if result.skipped > 0 {
+    for v in &result.violations {
+        let provenance = match v.service_source {
+            ServiceSource::PortHeuristic => " [heuristic]",
+            ServiceSource::DpiConfirmed => " [confirmed]",
+            ServiceSource::Unknown => "",
+        };
+        let service = v
+            .service
+            .as_ref()
+            .map(|s| format!(" {}{provenance}", service_str(s)))
+            .unwrap_or_default();
         writeln!(
             out,
-            "{} flow records skipped (malformed/unusable)",
-            result.skipped
+            "VIOLATION [{sev}] flow_index={fi} {sz} -> {dz} [{kind}] {sip}{sp} -> {dip}{dp} {proto}{service} — {explanation}",
+            sev = severity_str(v.severity),
+            fi = v.flow_index,
+            sz = v.src_zone.0,
+            dz = v.dst_zone.0,
+            kind = violation_kind_str(&v.kind),
+            sip = v.src_ip,
+            sp = v.src_port.map(|p| format!(":{p}")).unwrap_or_default(),
+            dip = v.dst_ip,
+            dp = v.dst_port.map(|p| format!(":{p}")).unwrap_or_default(),
+            proto = proto_str(&v.proto),
+            explanation = v.explanation,
         )?;
     }
-    for w in &result.warnings {
-        writeln!(out, "WARNING: {w}")?;
-    }
     Ok(())
-}
-
-fn count_kind(result: &ConformanceResult, kind: ViolationKind) -> usize {
-    result.violations.iter().filter(|v| v.kind == kind).count()
 }
 
 // ── Mermaid (BC-1.06.004, ADR-007 string generation) ─────────────────────────
 
 /// Emit a Mermaid `graph LR` topology with zones as nodes and conduits as edges;
 /// violated zones get the `:::violation` class. Deterministic (sorted).
+///
+/// Zone ids are arbitrary strings (a space, quote, or bracket would break a raw
+/// Mermaid node identifier — WAVE5-001), so every node gets a synthetic alias
+/// `z{i}` (sorted-index, collision-free) and the raw id appears only inside the
+/// quoted, escaped label. Edges reference aliases.
 pub fn emit_mermaid(
     result: &ConformanceResult,
     policy: &ValidatedPolicy,
@@ -174,45 +183,66 @@ pub fn emit_mermaid(
 ) -> io::Result<()> {
     writeln!(out, "graph LR")?;
 
-    let declared: BTreeSet<&str> = policy
+    // All node ids: declared zones plus any conduit endpoint (e.g. EXTERNAL).
+    let mut ids: BTreeSet<&str> = policy
         .policy
         .zones
         .iter()
         .map(|z| z.id.0.as_str())
         .collect();
-    // Zones (declared) appearing in any violation get highlighted.
+    for c in &policy.policy.conduits {
+        ids.insert(c.from_zone.0.as_str());
+        ids.insert(c.to_zone.0.as_str());
+    }
+    // Stable alias per id (sorted order → deterministic).
+    let alias: std::collections::HashMap<&str, String> = ids
+        .iter()
+        .enumerate()
+        .map(|(i, id)| (*id, format!("z{i}")))
+        .collect();
+    let level: std::collections::HashMap<&str, PurdueLevel> = policy
+        .policy
+        .zones
+        .iter()
+        .map(|z| (z.id.0.as_str(), z.purdue_level))
+        .collect();
+
+    // Declared zones appearing in any violation get highlighted.
     let mut violated: BTreeSet<&str> = BTreeSet::new();
     for v in &result.violations {
-        if declared.contains(v.src_zone.0.as_str()) {
+        if level.contains_key(v.src_zone.0.as_str()) {
             violated.insert(v.src_zone.0.as_str());
         }
-        if declared.contains(v.dst_zone.0.as_str()) {
+        if level.contains_key(v.dst_zone.0.as_str()) {
             violated.insert(v.dst_zone.0.as_str());
         }
     }
 
-    // Nodes, sorted by zone id (AC-008 determinism).
-    let mut zones: Vec<_> = policy.policy.zones.iter().collect();
-    zones.sort_by(|a, b| a.id.0.cmp(&b.id.0));
-    for z in &zones {
-        let class = if violated.contains(z.id.0.as_str()) {
+    // Nodes, sorted by id (BTreeSet iteration → deterministic). Declared zones
+    // carry their Purdue level; edge-only endpoints (EXTERNAL) just the id.
+    for id in &ids {
+        let label = match level.get(id) {
+            Some(lvl) => format!("{} ({})", mermaid_escape(id), purdue_str(*lvl)),
+            None => mermaid_escape(id),
+        };
+        let class = if violated.contains(id) {
             ":::violation"
         } else {
             ""
         };
-        writeln!(
-            out,
-            "    {id}[\"{id} ({lvl})\"]{class}",
-            id = z.id.0,
-            lvl = purdue_str(z.purdue_level)
-        )?;
+        writeln!(out, "    {}[\"{label}\"]{class}", alias[id])?;
     }
 
-    // Edges, sorted by (from, to).
+    // Edges, sorted by (from, to), referencing aliases.
     let mut conduits: Vec<_> = policy.policy.conduits.iter().collect();
     conduits.sort_by(|a, b| (&a.from_zone.0, &a.to_zone.0).cmp(&(&b.from_zone.0, &b.to_zone.0)));
     for c in &conduits {
-        writeln!(out, "    {} --> {}", c.from_zone.0, c.to_zone.0)?;
+        writeln!(
+            out,
+            "    {} --> {}",
+            alias[c.from_zone.0.as_str()],
+            alias[c.to_zone.0.as_str()]
+        )?;
     }
 
     writeln!(out, "    classDef violation fill:#f66")
@@ -270,6 +300,13 @@ fn conn_state_str(c: &ConnState) -> String {
         ConnState::Attempted => "Attempted".to_string(),
         ConnState::Other(s) => s.clone(),
     }
+}
+
+/// Escape a string for use inside a Mermaid quoted label. Node identity is
+/// handled separately by aliasing, so only the label-breaking `"` needs escaping
+/// (Mermaid renders the `#quot;` entity).
+fn mermaid_escape(s: &str) -> String {
+    s.replace('"', "#quot;")
 }
 
 fn purdue_str(l: PurdueLevel) -> &'static str {
