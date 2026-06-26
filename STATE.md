@@ -11,7 +11,7 @@ input-hash: "[live-state]"
 traces_to: ""
 project: "zonewarden"
 mode: "greenfield"
-current_step: "phase-3 TDD — Wave 2 (S-4.01 done; S-2.01 ready)"
+current_step: "phase-3 TDD — Waves 1-2 complete; Wave 2 gate pending; Wave 3 ready (S-1.03, S-2.02)"
 current_cycle: "zonewarden-greenfield"
 dtu_required: false
 ---
@@ -36,7 +36,7 @@ dtu_required: false
 | **Started** | 2026-06-17 |
 | **Last Updated** | 2026-06-26 |
 | **Current Phase** | 3 |
-| **Current Step** | Phase 3 TDD — Wave 2: S-4.01 done; S-2.01 ready (last Wave 2 story) |
+| **Current Step** | Phase 3 TDD — Waves 1-2 complete (4/17); Wave 2 gate pending; Wave 3 ready (S-1.03, S-2.02) |
 
 ## Phase Progress
 
@@ -45,7 +45,7 @@ dtu_required: false
 | 0: Codebase Ingestion | n/a (greenfield) | | | | |
 | 1: Spec Crystallization | COMPLETE | 2026-06-17 | 2026-06-17 | passed | 8 adversarial passes: 14→16→11→15→9→5→9→15; ~93 findings fixed; 0 CRIT ×6, all HIGH-to-date fixed. L2 FROZEN at v1.8 (D-009). Loop not converging to 0-HIGH (novelty 1.0) — accepted sound + proceeded to PRD. Pass-8 MED/LOW = backlog. |
 | 2: Story Decomposition | COMPLETE | 2026-06-17 | 2026-06-17 | passed | 6 epics, 17 stories, 5 waves, 10 holdout scenarios, 44/44 BC coverage, acyclic |
-| 3: TDD Implementation | in-progress | 2026-06-17 | | | Wave 1 + Wave 2 (2/3): S-1.01 + S-1.02 + S-4.01 DONE (workspace+PortSet; policy YAML load; severity grading DI-017). 3/17 stories; ~41 tests green; clippy -D warnings clean. Wave 2 remaining: S-2.01. |
+| 3: TDD Implementation | in-progress | 2026-06-17 | | | Waves 1-2 COMPLETE: S-1.01, S-1.02, S-4.01, S-2.01 DONE (workspace+PortSet; policy YAML load; severity DI-017; Zeek conn.log parser+RealitySource). 4/17 stories; ~60 tests green incl proptests; clippy -D warnings clean; fmt clean. Wave 2 gate pending; Wave 3 unlocked (S-1.03, S-2.02 ready). |
 | 4: Holdout Evaluation | not-started | | | | |
 | 5: Adversarial Refinement | not-started | | | | |
 | 6: Formal Hardening | not-started | | | | |
@@ -82,7 +82,9 @@ dtu_required: false
 | TDD: S-1.01 workspace + PortSet | (inline TDD) | completed | zonewarden-core + zonewarden crates; 10 tests; commit f380859 |
 | TDD: S-1.02 policy YAML load | (inline TDD) | completed | zonewarden lib+bin, policy::load; 10 tests; commit 6f3f01b |
 | TDD: S-4.01 severity grading | (inline TDD) | completed | zonewarden-core::severity (DI-017 single source; OQ-001 13-state); 5 tests; commit 4e95c29 |
-| TDD: Wave 2 remaining | — | next | S-2.01 zeek parser (last Wave 2 story) |
+| TDD: S-2.01 Zeek parser | (inline TDD) | completed | zonewarden::adapters::zeek + RealitySource + FlowParseError; 19 tests + proptests; commit f9a7ee4 |
+| Wave 2 integration gate | — | next | /vsdd-factory:wave-gate wave-2 (recommended before Wave 3) |
+| TDD: Wave 3 | — | ready | S-1.03 policy validation, S-2.02 service/cap (parallel; both unblocked) |
 
 ## Decisions Log
 
@@ -116,7 +118,7 @@ dtu_required: false
 | Field | Value |
 |-------|-------|
 | **Date** | 2026-06-26 |
-| **Position** | Phase 3 (TDD). S-1.01 + S-1.02 + S-4.01 DONE on dev (workspace+PortSet; policy YAML load via serde_norway DTO->core; severity grading — zonewarden-core::severity, DI-017 single source + OQ-001 13-state table, commit 4e95c29). ~41 tests green, clippy -D warnings clean. Repo: 3-branch model (main/dev/factory-artifacts worktree); code on dev. NEXT (last Wave 2 story): S-2.01 Zeek conn.log parser. Repo is fully `cargo fmt --check` clean (pre-existing S-1.02 drift fixed in 4a64cf2). |
+| **Position** | Phase 3 (TDD). Waves 1-2 COMPLETE on dev (4/17): S-1.01 workspace+PortSet; S-1.02 policy YAML load; S-4.01 severity (DI-017 single source, commit 4e95c29); S-2.01 Zeek conn.log parser — zonewarden::adapters::zeek + RealitySource trait + FlowParseError, conn_state reuses severity (commit f9a7ee4). ~60 tests green incl proptests, clippy -D warnings clean, fmt clean. Repo: 3-branch model (main/dev/factory-artifacts worktree); code on dev. NEXT: run Wave 2 integration gate (/vsdd-factory:wave-gate wave-2), then Wave 3 (S-1.03 policy validation + S-2.02 service/cap, parallel). Deferred: service_source inference -> S-2.02; cargo-fuzz target -> Phase 6. |
 | **Convergence counter** | spec loop closed by D-009 (not via D-008 streak) |
 
 ## Historical Content

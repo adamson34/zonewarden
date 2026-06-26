@@ -1,4 +1,4 @@
-current_wave: 2
+current_wave: 3
 total_waves: 5
 total_stories: 17
 total_points: 102
@@ -26,12 +26,14 @@ stories:
     notes: "policy::load (serde_norway DTO->core); 10 integration tests green; E-POL-001..004 + E-IO-001 wired; serde isolated in shell."
 
   S-2.01:
-    status: ready
+    status: done
     wave: 2
     points: 8
     blocked_by: [S-1.01]
-    branch: null
+    branch: dev
     worktree: null
+    commit: f9a7ee4
+    notes: "ZeekAdapter streaming conn.log parser + RealitySource trait + FlowParseError (E-FLW-001/002); 19 tests + proptests; conn_state via severity (S-4.01 DI-017 reuse). service_source deferred to S-2.02; cargo-fuzz deferred to Phase 6. Inline TDD on dev."
 
   S-4.01:
     status: done
@@ -44,7 +46,7 @@ stories:
     notes: "severity::grade + conn_state_from_token (DI-017 single source; OQ-001 13-state table); 5 integration tests; Red Gate verified. Inline TDD on dev."
 
   S-1.03:
-    status: blocked
+    status: ready
     wave: 3
     points: 8
     blocked_by: [S-1.02]
@@ -52,7 +54,7 @@ stories:
     worktree: null
 
   S-2.02:
-    status: blocked
+    status: ready
     wave: 3
     points: 5
     blocked_by: [S-2.01]
