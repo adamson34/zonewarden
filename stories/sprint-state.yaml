@@ -1,4 +1,4 @@
-current_wave: 4
+current_wave: 5
 total_waves: 5
 total_stories: 17
 total_points: 102
@@ -116,15 +116,17 @@ stories:
     notes: "classifier::classify -> Verdict (IntraZone/Allowed/WrongDirection/NoMatchingConduit; union match; portless=Any; additive IDMZ) + violations_for (graded Violations); Violation expanded with flow fields. 15 tests. Inline TDD on dev."
 
   S-4.04:
-    status: ready
+    status: done
     wave: 4
     points: 5
     blocked_by: [S-4.03]
-    branch: null
+    branch: dev
     worktree: null
+    commit: 5d4087a
+    notes: "classify dst_kind param + MulticastExempt first-branch short-circuit; Kani VP-1.04.010 verdict totality VERIFIED. Classification core complete. 5 tests. Inline TDD on dev."
 
   S-5.02:
-    status: blocked
+    status: ready
     wave: 5
     points: 8
     blocked_by: [S-4.04, S-5.01]
