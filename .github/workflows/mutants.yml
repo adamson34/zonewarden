@@ -1,0 +1,101 @@
+name: Mutants (weekly)
+
+# Mutation testing on the dev tip, once per week. Does NOT run on pull_request —
+# it is slow (~7 min) and must not block PR merges. Results are surfaced as a
+# step summary and a downloadable artifact, and the kill rate is gated.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Monday 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  mutants:
+    name: Mutation testing (zonewarden-core)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-mutants (pinned)
+        # Exact-version pin so the kill-rate threshold and JSON schema are
+        # reproducible. Bump manually when a new release is validated.
+        run: cargo install --locked cargo-mutants --version "=27.0.0"
+
+      - name: Run mutation testing
+        # Scoped to the pure core; kani harness bodies are verification-only and
+        # excluded from the meaningful denominator.
+        run: |
+          cargo mutants -p zonewarden-core --exclude-re kani_harness \
+            --no-shuffle --timeout-multiplier 5 --output mutants-out
+        env:
+          RUST_BACKTRACE: 1
+
+      - name: Upload mutation results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutants-results
+          path: mutants-out/**
+          retention-days: 30
+
+      - name: Kill-rate summary + gate
+        if: always()
+        run: |
+          OUTCOMES="mutants-out/outcomes.json"
+          PARSED=$(python3 -c "
+          import json
+          d = json.load(open('$OUTCOMES'))
+          o = d.get('outcomes', [])
+          # cargo-mutants v27 schema. Accept both 'Caught/MissedMutant' and the
+          # '*Mutation' spellings across point releases.
+          def is_(x, *names): return x.get('summary') in names
+          killed   = sum(1 for x in o if is_(x, 'CaughtMutant', 'CaughtMutation'))
+          survived = sum(1 for x in o if is_(x, 'MissedMutant', 'MissedMutation'))
+          timeout  = sum(1 for x in o if is_(x, 'Timeout'))
+          unviable = sum(1 for x in o if is_(x, 'Unviable'))
+          total = killed + survived + timeout
+          print(f'{killed} {total} {survived} {timeout} {unviable}')
+          " 2>/dev/null || echo "0 0 0 0 0")
+          read -r KILLED TOTAL SURVIVED TIMEOUT UNVIABLE <<< "$PARSED"
+          if [ "$TOTAL" -gt 0 ]; then
+            KILL_PCT=$(python3 -c "print(f'{($KILLED + $TIMEOUT) / $TOTAL * 100:.1f}')")
+          else
+            KILL_PCT="n/a"
+          fi
+          {
+            echo "## Mutation testing (zonewarden-core)"
+            echo ""
+            echo "| Metric | Value |"
+            echo "|--------|-------|"
+            echo "| Kill rate | ${KILL_PCT}% |"
+            echo "| Killed (caught + timeout) / Total | $((KILLED + TIMEOUT)) / ${TOTAL} |"
+            echo "| Survived | ${SURVIVED} |"
+            echo "| Unviable (excluded) | ${UNVIABLE} |"
+            echo ""
+            echo "> Baseline 96.4% (2026-06-29). Threshold 90% (convergence gate). Below fails."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Schema-mismatch sanity check: zero of every kind despite entries
+          # means the cargo-mutants schema shifted — fail loudly.
+          if [ -f "$OUTCOMES" ] && [ "$KILLED" = "0" ] && [ "$SURVIVED" = "0" ] && [ "$TIMEOUT" = "0" ] && [ "$UNVIABLE" = "0" ]; then
+            N=$(python3 -c "import json; print(len(json.load(open('$OUTCOMES')).get('outcomes', [])))" 2>/dev/null || echo 0)
+            if [ "$N" != "0" ]; then
+              echo "::error::outcomes.json has ${N} entries but parser found zero — cargo-mutants schema likely changed; update this workflow."
+              exit 1
+            fi
+          fi
+
+          if [ "$KILL_PCT" = "n/a" ]; then
+            echo "::warning::no outcomes.json produced (cargo-mutants may have failed early); not gating"
+            exit 0
+          fi
+          OK=$(python3 -c "print(1 if $KILL_PCT >= 90.0 else 0)")
+          if [ "$OK" = "1" ]; then
+            echo "Check passed: kill rate ${KILL_PCT}% (>= 90%), $((KILLED + TIMEOUT))/${TOTAL} killed, ${UNVIABLE} unviable excluded"
+          else
+            echo "::error::kill rate ${KILL_PCT}% is below the 90% convergence threshold. See the mutants-results artifact for survivors."
+            exit 1
+          fi

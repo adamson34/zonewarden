@@ -1,0 +1,40 @@
+name: Perf
+
+on:
+  schedule:
+    - cron: "0 12 * * 0"  # Sunday noon UTC
+  pull_request:
+    types: [labeled]
+
+jobs:
+  bench:
+    name: Benchmarks
+    # Runs on schedule, or on a PR only when the `perf` label is applied.
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'pull_request' && contains(github.event.label.name, 'perf')) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run criterion classify bench
+        # The classify hot path is the throughput-critical loop (see
+        # docs/performance.md, budget >= 5 M flows/s).
+        run: cargo bench -p zonewarden-core --bench classify
+
+      # Soft alert: criterion flags a regression vs the saved baseline.
+      # Non-blocking — perf budgets are documented, not a hard CI gate here.
+      - name: Check for criterion regressions (soft alert)
+        if: always()
+        run: |
+          if find target/criterion -name 'regression.json' 2>/dev/null | xargs grep -l '"regression":true' 2>/dev/null | grep -q .; then
+            echo "::warning::Criterion detected a performance regression. See the perf-results artifact / docs/performance.md."
+          fi
+
+      - name: Upload perf artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-results
+          path: target/criterion/
+          if-no-files-found: ignore
