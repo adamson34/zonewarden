@@ -1,0 +1,56 @@
+name: Fuzz (weekly)
+
+on:
+  schedule:
+    - cron: "0 2 * * 0"  # Sunday 02:00 UTC
+  workflow_dispatch:
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        harness:
+          - fuzz_zeek
+          - fuzz_policy
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pin nightly: cargo-fuzz's deps occasionally break on bleeding-edge
+      # nightly. Bump deliberately when a newer nightly is validated.
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2025-11-21
+
+      - run: cargo install --locked cargo-fuzz --version "=0.13.1"
+
+      - name: Run fuzz harness ${{ matrix.harness }}
+        # Emit a positive-coverage assertion so a silent no-op (libFuzzer exits 0
+        # without running) is visible and fails the job.
+        run: |
+          set -o pipefail
+          cd fuzz
+          cargo +nightly-2025-11-21 fuzz run ${{ matrix.harness }} -- -max_total_time=60 2>&1 | tee fuzz-run.log
+
+          PULSES=$(grep -cE "^#[0-9]+\s+(INITED|pulse|NEW|REDUCE|cov:)" fuzz-run.log || true)
+          DONE_LINE=$(grep -E "^Done [0-9]+ runs in" fuzz-run.log | tail -1 || true)
+          RUNS=$(echo "$DONE_LINE" | grep -oE "[0-9]+" | head -1 || echo "0")
+
+          if [ -z "$PULSES" ] || [ "$PULSES" -lt 1 ]; then
+            if [ "${RUNS:-0}" -lt 10 ]; then
+              echo "::error::fuzz harness ${{ matrix.harness }} produced no pulses and only ${RUNS:-0} runs — libFuzzer never started"
+              echo "Cannot assert positive coverage for ${{ matrix.harness }}" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+          fi
+          echo "## Fuzz harness ${{ matrix.harness }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Check passed: ${PULSES} libFuzzer pulse line(s), ${RUNS:-0} total runs in 60s" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload crash artifacts (if any)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-artifacts-${{ matrix.harness }}
+          path: fuzz/artifacts/${{ matrix.harness }}/
+          if-no-files-found: ignore

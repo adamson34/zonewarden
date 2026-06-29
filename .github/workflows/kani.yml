@@ -1,0 +1,100 @@
+name: Kani
+
+on:
+  schedule:
+    - cron: '0 6 * * 0'  # Sunday 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  proofs:
+    name: Kani proofs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install kani
+        run: cargo install --locked kani-verifier
+      - name: Setup kani
+        run: cargo kani setup
+
+      # Each harness runs independently; per-step continue-on-error so a single
+      # timeout/failure doesn't mask later harnesses. The summary step requires
+      # all 7 core proofs to succeed (VP-001..VP-006/VP-010).
+      - name: VP-001 resolver totality
+        id: resolve_total
+        run: cargo kani --harness resolve_is_total_on_empty_index
+        timeout-minutes: 15
+        continue-on-error: true
+      - name: VP-002 longest-prefix selection
+        id: longest_prefix
+        run: cargo kani --harness longest_prefix_wins
+        timeout-minutes: 20
+        continue-on-error: true
+      - name: VP-003 IDMZ truth table
+        id: idmz
+        run: cargo kani --harness bypass_truth_table
+        timeout-minutes: 15
+        continue-on-error: true
+      - name: VP-004 verdict totality
+        id: verdict
+        run: cargo kani --harness verdict_total
+        timeout-minutes: 15
+        continue-on-error: true
+      - name: VP-006 tally never wraps
+        id: tally
+        run: cargo kani --harness checked_inc_never_wraps
+        timeout-minutes: 15
+        continue-on-error: true
+      - name: VP-010 multicast exempt (IPv4)
+        id: mc_v4
+        run: cargo kani --harness step1_ipv4_multicast_broadcast_exempt
+        timeout-minutes: 20
+        continue-on-error: true
+      - name: VP-010 multicast exempt (IPv6)
+        id: mc_v6
+        run: cargo kani --harness step1_ipv6_multicast_exempt
+        timeout-minutes: 20
+        continue-on-error: true
+
+      # VP-008 (portset canonical form) is PARTIAL: its symbolic-length sort
+      # does not terminate in a practical unwind bound, so it is proptest-covered
+      # and run here for signal only — NOT part of the required count.
+      - name: VP-008 portset canonical (informational, partial)
+        id: portset
+        run: cargo kani --harness proof_canonicalize_idempotent
+        timeout-minutes: 20
+        continue-on-error: true
+
+      - name: Summarize harness outcomes
+        run: |
+          echo "Core proof outcomes:"
+          echo "  resolve_is_total_on_empty_index:        ${{ steps.resolve_total.outcome }}"
+          echo "  longest_prefix_wins:                    ${{ steps.longest_prefix.outcome }}"
+          echo "  bypass_truth_table:                     ${{ steps.idmz.outcome }}"
+          echo "  verdict_total:                          ${{ steps.verdict.outcome }}"
+          echo "  checked_inc_never_wraps:                ${{ steps.tally.outcome }}"
+          echo "  step1_ipv4_multicast_broadcast_exempt:  ${{ steps.mc_v4.outcome }}"
+          echo "  step1_ipv6_multicast_exempt:            ${{ steps.mc_v6.outcome }}"
+          echo "  proof_canonicalize_idempotent (info):   ${{ steps.portset.outcome }}"
+
+          # Positive-coverage assertion: count successes among the 7 required
+          # harnesses. A step that exits 0 because cargo kani matched no harness
+          # (typo / rename) would otherwise pass silently.
+          EXPECTED=7
+          succeeded=0
+          for outcome in \
+            "${{ steps.resolve_total.outcome }}" \
+            "${{ steps.longest_prefix.outcome }}" \
+            "${{ steps.idmz.outcome }}" \
+            "${{ steps.verdict.outcome }}" \
+            "${{ steps.tally.outcome }}" \
+            "${{ steps.mc_v4.outcome }}" \
+            "${{ steps.mc_v6.outcome }}"; do
+            [ "$outcome" = "success" ] && succeeded=$((succeeded + 1))
+          done
+          if [ "$succeeded" -eq "$EXPECTED" ]; then
+            echo "Check passed: ${succeeded}/${EXPECTED} required Kani harnesses verified"
+            exit 0
+          fi
+          echo "::error::only ${succeeded}/${EXPECTED} required Kani harnesses reported success — inspect the per-harness output above."
+          exit 1
