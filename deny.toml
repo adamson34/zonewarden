@@ -1,0 +1,36 @@
+# cargo-deny configuration. Checked in CI by .github/workflows/ci.yml
+# (EmbarkStudios/cargo-deny-action) and locally via `cargo deny check`.
+
+[licenses]
+# Permissive licenses present in the dependency tree (MIT, Apache-2.0, BSL-1.0,
+# Unicode-3.0, Unlicense), plus common permissive licenses allowed in advance so
+# a routine dependency bump doesn't trip CI. No copyleft (GPL/AGPL/MPL) is
+# allowed; add deliberately if ever needed.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "BSL-1.0",
+    "Unlicense",
+    "Zlib",
+    "CC0-1.0",
+]
+confidence-threshold = 0.8
+
+[bans]
+# Duplicate transitive versions are a warning, not a hard failure.
+multiple-versions = "warn"
+
+[advisories]
+# Security advisories (RUSTSEC) and yanked crates fail by default in the current
+# schema; list specific advisory IDs here to ignore with a documented rationale.
+ignore = []
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
