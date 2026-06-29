@@ -27,13 +27,40 @@ against observed flows.** zonewarden fills that gap.
 
 ## Status
 
-🚧 **Early development.** The full specification and design are complete; implementation is underway.
+✅ **Working MVP.** The full pipeline — load → validate → ingest → classify → aggregate → report —
+runs end-to-end on Zeek `conn.log` input, with JSON / text / Mermaid output and a deterministic
+policy digest. All 17 stories across 5 waves are implemented and the suite is green.
 
 | Phase | Status |
 |-------|--------|
 | Spec crystallization (domain model, PRD, behavioral contracts, architecture) | ✅ complete |
 | Story decomposition (epics, stories, waves, holdout scenarios) | ✅ complete |
-| Test-first implementation (Rust) | 🔜 in progress |
+| Test-first implementation (Rust) | ✅ complete — 200 tests, all 5 wave gates passed |
+| Formal hardening (Kani proofs, fuzzing, mutation, supply-chain) | ✅ complete — 7 Kani proofs, 3.4M fuzz runs clean |
+
+## Usage
+
+```sh
+# Build the CLI
+cargo build --release
+
+# Validate observed flows against a policy (exit 0 = conformant, 1 = violations, 2 = error)
+zonewarden --policy policy.yaml --flows conn.log
+
+# JSON report for CI pipelines
+zonewarden --policy policy.yaml --flows conn.log --format json
+
+# Purdue-tiered topology diagram (violations highlighted)
+zonewarden --policy policy.yaml --flows conn.log --format mermaid
+
+# Bound ingest for very large captures
+zonewarden --policy policy.yaml --flows conn.log --max-flows 1000000
+```
+
+**Exit codes** (ST-8): `0` conformant · `1` violations found · `2` usage/policy/limit error.
+The text summary reports per-verdict tallies (allowed, no-matching-conduit, wrong-direction,
+multicast-exempt, IDMZ bypasses, …); JSON adds the full violation list with a stable
+`schema_version` and `policy_digest`.
 
 ## How it's being built
 
